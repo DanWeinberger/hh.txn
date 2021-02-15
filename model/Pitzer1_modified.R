@@ -2,22 +2,22 @@
   model_string<-"
 model{
 {
+  for( i in 1 : 2013 ) { #i=2013 contacts 
+    nY[i] ~ dbern(q[i])  #Likelihood
+  }
+  
   p[1] <- 0
   tp[1] <- log(1 - p[1])          #transform of p
   
   for( d in 2 : 14 ) {              #d=day of illness
-    p[d] ~ dbeta(1,1)I(0,1)  #prior on txn on each day of illness d
-    tp[d] <- log(1 - p[d])    #prob of escaping on day d
-  }
-  
-  for( i in 1 : 2013 ) { #i=2013 contacts 
-    nY[i] ~ dbern(q[i]) 
+    p[d] ~ dbeta(1,1)I(0,1)  #prior of txn on each day of illness d
+    tp[d] <- log(1 - p[d])    #log(prob) of escaping on day d
   }
   
   for( i in 1 : 2013 ) {   #i=2013 contacts 
     for( t in 1 : 38 ) {    #t= 38 ___ ???? time from sympton onset to hospitalization for index
       for( j in 1 : 5 ) {    #Index case j--there are multiple index cases
-        te[i , t , j] <- tp[1 + T[i , t , j]] #Ti,j(t) is the day of illness of index case j at time t
+        te[i , t , j] <- tp[1 + T[i , t , j]] #Ti,j(t) is the day of illness of index case j at time t--time of index case+1
       }
       loge[i , t] <- sum(te[i , t , ]) #The probability that subject i escapes infection at time t over all of j
     }

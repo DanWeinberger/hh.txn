@@ -1,6 +1,7 @@
 #Data inputs: T, nY, obs, incub
 #Parameters estimated: p (probability of transmission on day d of illness), a &amp; b
 #(posterior estimates for hyper-parameters of gamma-distributed incubation period)
+
 model_string <- "
 model{
 {

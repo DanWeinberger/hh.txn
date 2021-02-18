@@ -2,6 +2,9 @@
 #Parameters estimated: p (probability of transmission on day d of illness), a &amp; b
 #(posterior estimates for hyper-parameters of gamma-distributed incubation period)
 
+#prob_transmission_function <- function(){
+
+
 model_string <- "
 model{
 {
@@ -67,3 +70,24 @@ model{
   v[1] <= 0
 }
 "
+
+set.seed(3.14159)
+dat <- list(N = 1000, lower = rep(0, 1000), upper = runif(1000, 5, 200000))
+ini <- list(P = c(0.4, NA), r = c(8.2, 1.2), beta = c(3.8, -6.5))
+
+mod <- jags.model(
+  file = textConnection(txt), 
+  data = dat,
+  inits = c(ini, .RNG.name = 'base::Mersenne-Twister', .RNG.seed = 314159),
+  n.chains = 1,
+  n.adapt  = 100
+)
+
+sam.jags <- coda.samples(
+  model = mod,
+  variable.names = c('P', 'r', 'beta', 'weibmed', 'weibmean'),
+  n.iter = 400,
+  n.thin = 1
+)
+
+#}

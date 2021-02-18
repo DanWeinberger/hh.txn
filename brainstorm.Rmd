@@ -1,0 +1,26 @@
+---
+title: "brainstorming"
+author: "Dan Weinberger"
+date: "2/18/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Brainstorming model structure
+
+Focus on households with an index case j and with i contacts
+
+ j index cases, i Contacts
+
+Follow contact from t=0 (date of symptom onset of index minus incubation time distibution to tj, which is either date of infection or max time (e.g. 30 days))
+
+From previous work, we can have a predicted probability of transmission from day of symptom onset. At each time point, we can say for each index the prob transmission. And these can be summed over multiple contacts (each of which might be at different points in their distributions) this yields a single prob transmission for each day.
+--this distribution can be multiplied by lambda (VE against transmission).
+
+
+
+
+

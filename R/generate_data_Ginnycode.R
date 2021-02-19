@@ -1,4 +1,6 @@
 #################################
+gen_sim_data <- function(){
+
 set.seed(123)
 nprob=array(c(0.01, 0.01,0.02,0.02,0.04,0.04,0.01,0.01),dim=c(1,8)) #probability of transmission from "normal" index case on day 1-8 of illness
 hprob=0.06*array(1, dim=c(1,8)) #probability of transmission from "highly infectious" index case on day 1-8
@@ -78,10 +80,16 @@ for (i in (1+sum(totcase)):popsize){ #uninfected contacts
     }
   }
 }      
-T=T[,1:30]
+T=T[,1:38]
 
 #These are the other two variables you need to run the WinBugs code ("known" incubation periods and infection status of those contacts)
 incub <- rep(NA,81)
 incub <- round(rgamma(81,1.33,1/3.46))
 
 obs=array(1, dim=c(81,1))
+
+
+
+data.sim<-list('T'=T, 'nY'=nY,'obs'=obs,'incub'=incub)
+return(data.sim)
+}

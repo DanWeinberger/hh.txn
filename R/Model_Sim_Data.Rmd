@@ -13,18 +13,28 @@ library(rjags)
 
 ## Generate simulated data
 nY vector[2400]
-T_i_j_t [1200,5,120]
+T [2400,30]
 incub[81]
 obs[81]
 
 ```{r}
 source('./generate_data_Ginnycode.R')
+data.sim <- gen_sim_data()
+
+T <- data.sim$T
+
+T <- array(T,dim=c(2013,38,5))
+
+#T <- data.list$T
+nY <- data.sim$nY[1:2013]
+obs <- data.sim$obs
+incub <- data.sim$incub
 ```
 
 
 Read in model
 ```{r}
-source('../model/Pitzer1.R')
+source('../model/Pitzer_annotated_jags.R')
 ```
 
 ```{r}
@@ -43,13 +53,8 @@ inits3=list(".RNG.seed"=c(789), ".RNG.name"='base::Wichmann-Hill')
 model_spec<-textConnection(model_string)
 model_jags<-jags.model(model_spec, 
                        inits=list(inits1,inits2, inits3),
-                       data=list('T'=T_ijt,
+                       data=list('T'=T,
                                  'nY'=nY,
-                                  'n.times' = dim(T_ijt)[3],
-                                 'N'=length(nY),
-                                 'max.index' =dim(T_ijt)[3],
-                                 'N.infected'=sum(nY),
-                                 
                                  'obs'=as.vector(obs),
                                  'incub'=incub),
                        n.adapt=10000, 

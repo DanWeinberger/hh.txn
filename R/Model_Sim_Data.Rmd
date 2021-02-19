@@ -1,0 +1,61 @@
+---
+title: "sim_data_model"
+author: "Dan Weinberger"
+date: "2/19/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rjags)
+
+```
+
+## Generate simulated data
+nY vector[2400]
+T_i_j_t [1200,5,120]
+incub[81]
+obs[81]
+
+```{r}
+source('./generate_data_Ginnycode.R')
+```
+
+
+Read in model
+```{r}
+source('../model/Pitzer1.R')
+```
+
+```{r}
+##############################################################
+#Model Fitting
+##############################################################
+inits1=list(".RNG.seed"=c(123), ".RNG.name"='base::Wichmann-Hill')
+inits2=list(".RNG.seed"=c(456), ".RNG.name"='base::Wichmann-Hill')
+inits3=list(".RNG.seed"=c(789), ".RNG.name"='base::Wichmann-Hill')
+
+
+
+##############################################
+#Model Organization
+##############################################
+model_spec<-textConnection(model_string)
+model_jags<-jags.model(model_spec, 
+                       inits=list(inits1,inits2, inits3),
+                       data=list('T'=T_ijt,
+                                 'nY'=nY,
+                                  'n.times' = dim(T_ijt)[3],
+                                 'N'=length(nY),
+                                 'max.index' =dim(T_ijt)[3],
+                                 'N.infected'=sum(nY),
+                                 
+                                 'obs'=as.vector(obs),
+                                 'incub'=incub),
+                       n.adapt=10000, 
+                       n.chains=3)
+
+```
+
+
+

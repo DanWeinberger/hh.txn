@@ -21,7 +21,8 @@ model{
         #Number of index cases to whom contact I might have been exposed
         te[i , t , j] <-
           tp[1 + T[i , t , j]] #Log likl i escaped infection from j at time t (function of day of illness of j at t)
-      }
+      } 
+      
       loge[i , t] <-
         sum(te[i , t , ]) #Log likelihood i escaped infection from all contact at time t
     }

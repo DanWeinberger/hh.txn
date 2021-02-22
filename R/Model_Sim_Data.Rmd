@@ -12,23 +12,33 @@ library(rjags)
 ```
 
 ## Generate simulated data
-nY vector[2400]
-T [2400,30]
+nY vector[2013]
+T [2013,38,5]
 incub[81]
 obs[81]
 
 ```{r}
 source('./generate_data_Ginnycode.R')
+ds <- readRDS('../DONOTSYNC/data.list.rds')
 data.sim <- gen_sim_data()
 
-T <- data.sim$T
+T <- data.sim$T  #These dimensions not right!
 
-T <- array(T,dim=c(2013,38,5))
+T <- array(T,dim=c(2400,38,1))
 
 #T <- data.list$T
-nY <- data.sim$nY[1:2013]
-obs <- data.sim$obs
-incub <- data.sim$incub
+nY <- data.sim$nY
+N_uninfected <- length(nY) - sum(nY)
+N_infected <- sum(nY)
+infected_indices <- which(nY==1)
+uninfected_indices <- which(nY==0)
+
+N_infected_contact <- apply(T,c(1,2), function(x)   sum(x)>0  )
+N_infected_contact <- apply(N_infected_contact,1,sum)
+
+#Obs and incub from the observed data
+obs <- ds$obs
+incub <- ds$incub
 ```
 
 
@@ -55,6 +65,11 @@ model_jags<-jags.model(model_spec,
                        inits=list(inits1,inits2, inits3),
                        data=list('T'=T,
                                  'nY'=nY,
+                                  'N_contacts'=length(nY),
+                                 'N_index_cases' =dim(T)[3] ,
+                                 "N_times"= dim(T)[2],
+                                 'infected_indices'=infected_indices,
+                                 'uninfected_indices'=infected_indices,
                                  'obs'=as.vector(obs),
                                  'incub'=incub),
                        n.adapt=10000, 

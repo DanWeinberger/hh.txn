@@ -12,7 +12,7 @@ library(rjags)
 ```
 
 ## Generate simulated data
-nY vector[2013]
+nY vector[2013]  0= infected; 1=uninfected
 T [2013,38,5]
 incub[81]
 obs[81]
@@ -28,13 +28,10 @@ T <- array(T,dim=c(2400,38,1))
 
 #T <- data.list$T
 nY <- data.sim$nY
-N_uninfected <- length(nY) - sum(nY)
-N_infected <- sum(nY)
-infected_indices <- which(nY==1)
-uninfected_indices <- which(nY==0)
-
-N_infected_contact <- apply(T,c(1,2), function(x)   sum(x)>0  )
-N_infected_contact <- apply(N_infected_contact,1,sum)
+N_infected <- length(nY) - sum(nY)
+N_uninfected <- sum(nY)
+uninfected_indices <- which(nY==1)
+infected_indices <- which(nY==0)
 
 #Obs and incub from the observed data
 obs <- ds$obs

@@ -19,7 +19,8 @@ obs[81]
 
 ```{r}
 source('./generate_data_Ginnycode.R')
-ds <- readRDS('../winbugs_PS/data.list.rds')
+ds <- readRDS('../DONOTSYNC/data.list.rds')
+#ds <- readRDS('../winbugs_PS/data.list.rds')
 data.sim <- gen_sim_data()
 
 T <- data.sim$T  #These dimensions not right!

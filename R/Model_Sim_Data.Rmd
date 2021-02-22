@@ -19,7 +19,7 @@ obs[81]
 
 ```{r}
 source('./generate_data_Ginnycode.R')
-ds <- readRDS('../DONOTSYNC/data.list.rds')
+ds <- readRDS('../winbugs_PS/data.list.rds')
 data.sim <- gen_sim_data()
 
 T <- data.sim$T  #These dimensions not right!
@@ -76,5 +76,19 @@ model_jags<-jags.model(model_spec,
 
 ```
 
+```{r}
+params<-c('p',
+          'a',
+          'b')
+
+##############################################
+#Posterior Sampling
+##############################################
+posterior_samples<-coda.samples(model_jags, 
+                                params, 
+                                n.iter=100000)
+posterior_samples.all<-do.call(rbind,posterior_samples)
+
+```
 
 

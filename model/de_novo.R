@@ -49,7 +49,7 @@ model{
   
   for( t in 2 : 42 ) {
     v[t] <- exp((a - 1) * log(b * (t - 1.5)) - b * (t - 1.5) - loggam(a)) * b #Incubation period is gamma distributed with
-  } #hyper-parameters a and b
+  } 
   
 
   v[1] <- 0

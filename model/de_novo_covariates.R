@@ -26,10 +26,11 @@ model{
       inf[i , t] <- (exp(ploge[i , t])) * (1 - exp(loge[i , t])) #Likelihood i was infected at time t (and escaped prior to t)
       g[i , t] <- v[40 - t] #Likelihood of incubation period being 39.5 - t days
  
-    for(j in 1:contacts[i]){
+    for(j in 1:N.contacts[i]){
       for(d in 1:7){
-      log_p[i,d[t,i],j] <- alpha[d[t,i]] + beta[1]*vax1.index[t,i,j] +  beta[2]*vax2.index[t,i,j] +   beta[3]*vax1.contact[t,i] +   beta[4]*vax2.contact[t,i]           #probability of transmission on day d-1 of index case illness
-      tp[i,d[t,i], j] <- log(1 - exp(log_p[i,d[t,i]],j)
+      logit_p[i,d[t,i],j] <- alpha[d[t,i,j]] + beta[1]*vax1.index[t,i,j] +  beta[2]*vax2.index[t,i,j] +   beta[3]*vax1.contact[t,i] +   beta[4]*vax2.contact[t,i]           #probability of transmission on day d-1 of index case illness
+      p[i,d[t,i],j] <- exp(logit_p[i,d[t,i],j])/exp(logit_p[i,d[t,i],j] + 1)  #Inverse logit
+      tp[i,d[t,i], j] <- log(1 - p[i,d[t,i]],j)
       }
   
       te[i , t , j] <- tp[1 + T[i , t , j]] #Log likl i escaped infection from j at time t (function of day of illness of j at t)
@@ -45,15 +46,17 @@ model{
   
   a ~ dgamma(.001,.001) #Uninformative priors for hyper-parameters of gamma-distributed incubation period
   b ~ dgamma(.001,.001)
-  alpha ~dnorm(0,1e-4)
   
+  for(d in in 1:7){
+    alpha[d] ~dnorm(0,1e-4)
+  }
   for(k in 1:4){
   beta[k] ~dnorm(0,1e-4)
   }
   
   for( t in 2 : 42 ) {
     v[t] <- exp((a - 1) * log(b * (t - 1.5)) - b * (t - 1.5) - loggam(a)) * b #Incubation period is gamma distributed with
-  } #hyper-parameters a and b
+  } 
   
 
   v[1] <- 0

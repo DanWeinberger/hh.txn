@@ -1,4 +1,4 @@
-#Data inputs: T, nY, obs, incub
+#Data inputs: T, nY, obs, incub, d
 #Parameters estimated: p (probability of transmission on day d of illness), a &amp; b
 #(posterior estimates for hyper-parameters of gamma-distributed incubation period)
 
@@ -13,12 +13,7 @@ model{
   p[1] <- 0 #Probability of transmission when NOT exposed to index case
   tp[1] <- log(1 - p[1]) #Log probability of NO transmission on day d
   
-  for( d in 2 : 14 ) {
-    p[d] ~ dbeta(1,1)I(0,1) #Uninformative Beta prior for probability of transmission on day d-1 of index case illness
-    tp[d] <- log(1 - p[d])
-  }
-  
-  
+
   for(i in 1: N_contacts){
          nY[i] ~ dbern(q[i]) #nY is our data on whether the contact was NOT infected (0=infected, 1=not infected),
         
@@ -31,8 +26,12 @@ model{
       inf[i , t] <- (exp(ploge[i , t])) * (1 - exp(loge[i , t])) #Likelihood i was infected at time t (and escaped prior to t)
       g[i , t] <- v[40 - t] #Likelihood of incubation period being 39.5 - t days
  
-
     for(j in 1:contacts[i]){
+      for(d in 1:7){
+      log_p[i,d[t,i],j] <- alpha[d[t,i]] + beta[1]*vax1.index[t,i,j] +  beta[2]*vax2.index[t,i,j] +   beta[3]*vax1.contact[t,i] +   beta[4]*vax2.contact[t,i]           #probability of transmission on day d-1 of index case illness
+      tp[i,d[t,i], j] <- log(1 - exp(log_p[i,d[t,i]],j)
+      }
+  
       te[i , t , j] <- tp[1 + T[i , t , j]] #Log likl i escaped infection from j at time t (function of day of illness of j at t)
     }
     loge[i , t] <- sum(te[i , t , ]) #Log likelihood i escaped infection from all contact at time t
@@ -46,6 +45,11 @@ model{
   
   a ~ dgamma(.001,.001) #Uninformative priors for hyper-parameters of gamma-distributed incubation period
   b ~ dgamma(.001,.001)
+  alpha ~dnorm(0,1e-4)
+  
+  for(k in 1:4){
+  beta[k] ~dnorm(0,1e-4)
+  }
   
   for( t in 2 : 42 ) {
     v[t] <- exp((a - 1) * log(b * (t - 1.5)) - b * (t - 1.5) - loggam(a)) * b #Incubation period is gamma distributed with

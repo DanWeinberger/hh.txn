@@ -33,8 +33,6 @@ model{
       g[i , t] <- v[40 - t] #Likelihood of incubation period being 39.5 - t days
  
     for(j in 1:N.indexes[i]){
-      for(d in 1:14){
-      
       #Define prob infection for person i, from contact j at time t
       ## Is a function of the baseline prob for delay for index j and
       ## the vaccine status of the index and the contact at time t
@@ -46,10 +44,9 @@ model{
       )
       
       p[i,t,j] <- exp(logit_p[i,t,j])/exp(logit_p[i,t,j] + 1)  #Inverse logit
-      
-      tp[i,t, j] <- log(1 - p[i,t,j])
-      }
-  
+       
+      tp[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
+
       te[i , t , j] <- tp[1 + T[i , t , j]] #Log likl i escaped infection from j at time t (function of day of illness of j at t)
     }
     loge[i , t] <- sum(te[i , t ,1:N.contacts[i] ]) #Log likelihood i escaped infection from all contact at time t

@@ -17,9 +17,10 @@ model{
 {
   d <- T+1
 
-    p[,1,] <- 0 #Probability of transmission when NOT exposed to index case
-    log_p_uninf_j[,1,] <- log(1 - p[,1,]) #Log probability of NO transmission on day d
-  
+    p[1:N_contacts,1,] <- 0 #Probability of transmission when NOT exposed to index case
+    log_p_uninf_j[1:N_contacts,1,] <- log(1 - p[1:N_contacts,1,]) #Log probability of NO transmission on day d
+    cum_log_p_uninf[1:N_contacts , 1] <- 0 #Log likl of escaping infection prior to t=1 (Note the order you define things doesn’t matter)
+
   for(i in 1: N_contacts){
 
          nY[i] ~ dbern(q[i]) #nY is our data on whether the contact was NOT infected (0=infected, 1=not infected),
@@ -50,12 +51,10 @@ model{
    }
   
     for( t in 2: N_times[i] ) {
-    
       log_p_uninf_j[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
       log_p_uninf[i , t] <- sum(log_p_uninf_j[i , t ,1:N.contacts[i] ]) #Log likelihood i escaped infection from all contact at time t
       cum_log_p_uninf[i , t] <- cum_log_p_uninf[i , t - 1] + log_p_uninf[i , t-1] #Log likl i escaped infection from all contact prior to time t
     }
-    cum_log_p_uninf[i , 1] <- 0 #Log likl of escaping infection prior to t=1 (Note the order you define things doesn’t matter)
   }
   
   a ~ dgamma(.001,.001) #Uninformative priors for hyper-parameters of gamma-distributed incubation period

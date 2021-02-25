@@ -47,9 +47,9 @@ model{
        
       tp[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
 
-      te[i , t , j] <- tp[1 + T[i , t , j]] #Log likl i escaped infection from j at time t (function of day of illness of j at t)
+      #te[i , t , j] <- tp[1 + T[i , t , j]] #Log likl i escaped infection from j at time t (function of day of illness of j at t)
     }
-    loge[i , t] <- sum(te[i , t ,1:N.contacts[i] ]) #Log likelihood i escaped infection from all contact at time t
+    loge[i , t] <- sum(tp[i , t ,1:N.contacts[i] ]) #Log likelihood i escaped infection from all contact at time t
    }
   
     for( t in 2 : 38 ) {

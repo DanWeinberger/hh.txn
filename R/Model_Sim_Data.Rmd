@@ -19,22 +19,30 @@ obs[81]
 
 ```{r}
 source('./generate_data_Ginnycode.R')
+ds <- readRDS('../data/data.list.rds')
 data.sim <- gen_sim_data()
 
-T <- data.sim$T
-
-T <- array(T,dim=c(2013,38,5))
-
+T <- data.sim$T  #These dimensions not right!
+T <- array(T,dim=c(2400,38,1))
 #T <- data.list$T
-nY <- data.sim$nY[1:2013]
-obs <- data.sim$obs
-incub <- data.sim$incub
+nY <- data.sim$nY
+N_infected <- length(nY) - sum(nY)
+N_uninfected <- sum(nY)
+uninfected_indices <- which(nY==1)
+infected_indices <- which(nY==0)
+
+#Obs and incub from the observed data
+obs <- ds$obs
+incub <- ds$incub
+N.indexes <- rep(1,nrow(T))
+N_times <- rep(38,length(nY))
+
 ```
 
 
 Read in model
 ```{r}
-source('../model/Pitzer_annotated_jags.R')
+source('../model/de_novo.R')
 ```
 
 ```{r}
@@ -55,6 +63,10 @@ model_jags<-jags.model(model_spec,
                        inits=list(inits1,inits2, inits3),
                        data=list('T'=T,
                                  'nY'=nY,
+                                 'N_times'=N_times,
+                                 'N_contacts'=length(nY),
+                                 'N_indexes'=N.indexes,
+                                 'nY2'=nY,
                                  'obs'=as.vector(obs),
                                  'incub'=incub),
                        n.adapt=10000, 

@@ -8,7 +8,7 @@
 model_string <- "
 
 model{
-{
+
 
  p[1] <- 0 #Probability of transmission when NOT exposed to index case
   tp[1] <- log(1 - p[1]) #Log probability of NO transmission on day d

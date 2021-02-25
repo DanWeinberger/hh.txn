@@ -16,11 +16,12 @@ model_string <- "
 model{
 {
   d <- T+1
-  p[1] <- 0 #Probability of transmission when NOT exposed to index case
-  tp[1] <- log(1 - p[1]) #Log probability of NO transmission on day d
-  
 
+    p[,1,] <- 0 #Probability of transmission when NOT exposed to index case
+    log_p_uninf_j[,1,] <- log(1 - p[,1,]) #Log probability of NO transmission on day d
+  
   for(i in 1: N_contacts){
+
          nY[i] ~ dbern(q[i]) #nY is our data on whether the contact was NOT infected (0=infected, 1=not infected),
         
          q[i] <- (1-nY[i])*exp(log_p_uninf[i , N_times[i]]) + #Likelihood uninfected contact escaped infection

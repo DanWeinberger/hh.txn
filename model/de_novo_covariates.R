@@ -28,14 +28,24 @@ model{
  
     for(j in 1:N.contacts[i]){
       for(d in 1:7){
-      logit_p[i,d[t,i],j] <- alpha[d[t,i,j]] + beta[1]*vax1.index[t,i,j] +  beta[2]*vax2.index[t,i,j] +   beta[3]*vax1.contact[t,i] +   beta[4]*vax2.contact[t,i]           #probability of transmission on day d-1 of index case illness
-      p[i,d[t,i],j] <- exp(logit_p[i,d[t,i],j])/exp(logit_p[i,d[t,i],j] + 1)  #Inverse logit
-      tp[i,d[t,i], j] <- log(1 - p[i,d[t,i]],j)
+      
+      #Define prob infection for person i, from contact j at time t
+      ## Is a function of the baseline prob for delay for index j and
+      ## the vaccine status of the index and the contact at time t
+      ## Is d= T+1?
+      logit_p[i,t,j] <- (alpha[d[t,i,j]] + #Baseline prob probability of transmission on day d-1 of index case illness
+                 beta[1]*vax1.index[t,i,j] +  beta[2]*vax2.index[t,i,j] + #Effect of vaccination of the index
+                 beta[3]*vax1.contact[t,i] +   beta[4]*vax2.contact[t,i]    ##effect of vaccinaion of the contact       
+      )
+      
+      p[i,t,j] <- exp(logit_p[i,t,j])/exp(logit_p[i,t,j] + 1)  #Inverse logit
+      
+      tp[i,t, j] <- log(1 - p[i,t,j])
       }
   
       te[i , t , j] <- tp[1 + T[i , t , j]] #Log likl i escaped infection from j at time t (function of day of illness of j at t)
     }
-    loge[i , t] <- sum(te[i , t , ]) #Log likelihood i escaped infection from all contact at time t
+    loge[i , t] <- sum(te[i , t ,1:N.contacts[i] ]) #Log likelihood i escaped infection from all contact at time t
    }
   
     for( t in 2 : 38 ) {
@@ -59,14 +69,14 @@ model{
   } 
   
 
-  v[1] <- 0
-  for( i in 1 : 81 ) {
-      obs[i] ~ dbern(Q[i]) #obs is the infection status of cases with known incubation period (=1)
-      Q[i] <- sum(expos[i , ]) #Likelihood of all possible incubation periods for 81 contacts with known exposure period
-
-    for( j in 1 : 41 ) {
-      expos[i , j] <- v[incub[i , j] + 1] / sum(v[]) #Likelihood incubation period for i is incub[i,j] days
-    }
-  }
+  # v[1] <- 0
+  # for( i in 1 : 81 ) {
+  #     obs[i] ~ dbern(Q[i]) #obs is the infection status of cases with known incubation period (=1)
+  #     Q[i] <- sum(expos[i , ]) #Likelihood of all possible incubation periods for 81 contacts with known exposure period
+  # 
+  #   for( j in 1 : 41 ) {
+  #     expos[i , j] <- v[incub[i , j] + 1] / sum(v[]) #Likelihood incubation period for i is incub[i,j] days
+  #   }
+  # }
 
 }"

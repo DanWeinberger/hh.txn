@@ -62,3 +62,38 @@ library(reshape2)
    
  }
  
+ 
+ 
+ ###Simulate More people
+ gen.uninfected.contact <- function(){
+    N.indexes <- min(1+ rpois(n=1,1.5),5) #cap at 5
+    df1 <- as.data.frame(matrix(NA, nrow=N.indexes, ncol=2))
+    names(df1) <- c('contactID', 'indexID')
+    df1$contactID <- 1
+    df1$indexID <- 1:N.indexes
+    first.date <- '2020-04-01'
+    df1$date.index.test <- sample(seq(as.Date(first.date), as.Date(first.date)+14, by="day"), N.indexes)
+    df1$date.contact.test <- df1$date.index.test + 21 #max 21 day follow up
+   
+    df1$fu.time <- as.numeric(df1$date.contact.test - df1$date.index.test) +1
+    df1$infected <-0
+    df1$date.df <- as.Date(NA) 
+ }
+ 
+ gen.infected.contact <- function(){
+    N.indexes <- min(1+ rpois(n=1,1.5),5) #cap at 5
+    df1 <- as.data.frame(matrix(NA, nrow=N.indexes, ncol=2))
+    names(df1) <- c('contactID', 'indexID')
+    df1$contactID <- 1
+    df1$indexID <- 1:N.indexes
+    first.date <- '2020-04-01'
+    df1$date.index.test <- sample(seq(as.Date(first.date), as.Date(first.date)+14, by="day"), N.indexes)
+    df1$date.contact.test <- df1$date.index.test + rpois(n=1,5) +1
+
+    df1$fu.time <- as.numeric(df1$date.contact.test - df1$date.index.test) +1
+    df1$infected <-1
+    df1$date.df <- as.Date(df1$date.contact.test) 
+ }
+ 
+ 
+ 

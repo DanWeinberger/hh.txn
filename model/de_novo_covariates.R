@@ -27,7 +27,7 @@ model{
       g[i , t] <- v[40 - t] #Likelihood of incubation period being 39.5 - t days
  
     for(j in 1:N.indexes[i]){
-      for(d in 1:7){
+      for(d in 1:14){
       
       #Define prob infection for person i, from contact j at time t
       ## Is a function of the baseline prob for delay for index j and
@@ -57,7 +57,7 @@ model{
   a ~ dgamma(.001,.001) #Uninformative priors for hyper-parameters of gamma-distributed incubation period
   b ~ dgamma(.001,.001)
   
-  for(d in in 1:7){
+  for(d in in 1:14){
     alpha[d] ~dnorm(0,1e-4)
   }
   for(k in 1:4){

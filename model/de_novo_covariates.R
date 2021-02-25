@@ -15,7 +15,7 @@ model_string <- "
 
 model{
 {
-
+  d <- T+1
   p[1] <- 0 #Probability of transmission when NOT exposed to index case
   tp[1] <- log(1 - p[1]) #Log probability of NO transmission on day d
   
@@ -39,6 +39,7 @@ model{
       ## Is a function of the baseline prob for delay for index j and
       ## the vaccine status of the index and the contact at time t
       ## Is d= T+1?
+      
       logit_p[i,t,j] <- (alpha[d[t,i,j]] + #Baseline prob probability of transmission on day d-1 of index case illness
                  beta[1]*vax1.index[t,i,j] +  beta[2]*vax2.index[t,i,j] + #Effect of vaccination of the index
                  beta[3]*vax1.contact[t,i] +   beta[4]*vax2.contact[t,i]    ##effect of vaccinaion of the contact       

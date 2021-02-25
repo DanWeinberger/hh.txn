@@ -19,8 +19,8 @@ obs[81]
 
 ```{r}
 source('./generate_data_Ginnycode.R')
-ds <- readRDS('../DONOTSYNC/data.list.rds')
-#ds <- readRDS('../winbugs_PS/data.list.rds')
+#ds <- readRDS('../DONOTSYNC/data.list.rds')
+ds <- readRDS('../winbugs_PS/data.list.rds')
 data.sim <- gen_sim_data()
 
 T <- data.sim$T  #These dimensions not right!
@@ -37,12 +37,15 @@ infected_indices <- which(nY==0)
 #Obs and incub from the observed data
 obs <- ds$obs
 incub <- ds$incub
+N.indexes <- rep(1,nrow(T))
+N_times <- rep(38,length(nY))
 ```
 
 
 Read in model
 ```{r}
-source('../model/Pitzer_annotated_jags.R')
+#source('../model/Pitzer_annotated_jags.R')
+source('../model/de_novo.R')
 ```
 
 ```{r}
@@ -63,13 +66,17 @@ model_jags<-jags.model(model_spec,
                        inits=list(inits1,inits2, inits3),
                        data=list('T'=T,
                                  'nY'=nY,
-                                  'N_contacts'=length(nY),
-                                 'N_index_cases' =dim(T)[3] ,
-                                 "N_times"= dim(T)[2],
-                                 'infected_indices'=infected_indices,
-                                 'N_infected'=length(infected_indices),
-                                 'N_uninfected'=length(uninfected_indices),
-                                 'uninfected_indices'=uninfected_indices,
+                                 'N_contacts'=length(nY),
+                                 #'N_index_cases' =dim(T)[3] ,
+                                 #"N_times"= dim(T)[2],
+                                 "N_times"=N_times,
+                                 #'contacts' =dim(T)[3],
+                                 'contacts' =N.indexes,
+                                 #'infected_indices'=infected_indices,
+                                 #'N_infected'=length(infected_indices),
+                                 #'N_uninfected'=length(uninfected_indices),
+                                 #'uninfected_indices'=uninfected_indices,
+                                 'nY2'=nY,
                                  'obs'=as.vector(obs),
                                  'incub'=incub),
                        n.adapt=10000, 

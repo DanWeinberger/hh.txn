@@ -32,7 +32,7 @@ model{
       g[i , t] <- v[40 - t] #Likelihood of incubation period being 39.5 - t days
  
 
-    for(j in 1:contacts[i]){
+    for(j in 1:N_indexes[i]){
       te[i , t , j] <- tp[1 + T[i , t , j]] #Log likl i escaped infection from j at time t (function of day of illness of j at t)
     }
     loge[i , t] <- sum(te[i , t , ]) #Log likelihood i escaped infection from all contact at time t

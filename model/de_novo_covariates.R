@@ -26,7 +26,7 @@ model{
       inf[i , t] <- (exp(ploge[i , t])) * (1 - exp(loge[i , t])) #Likelihood i was infected at time t (and escaped prior to t)
       g[i , t] <- v[40 - t] #Likelihood of incubation period being 39.5 - t days
  
-    for(j in 1:N.contacts[i]){
+    for(j in 1:N.indexes[i]){
       for(d in 1:7){
       
       #Define prob infection for person i, from contact j at time t

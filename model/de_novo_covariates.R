@@ -23,13 +23,13 @@ model{
   for(i in 1: N_contacts){
          nY[i] ~ dbern(q[i]) #nY is our data on whether the contact was NOT infected (0=infected, 1=not infected),
         
-         q[i] <- (1-nY[i])*exp(ploge[i , 38]) + #Likelihood uninfected contact escaped infection
+         q[i] <- (1-nY[i])*exp(log_p_uninf[i , N_times[i]]) + #Likelihood uninfected contact escaped infection
                  nY[i]*(1 - inprod(g[i , ],inf[i , ])) #Likelihood infected contact escaped infection
 
   
    for(t in 1: N_times[i]){
    
-      inf[i , t] <- (exp(ploge[i , t])) * (1 - exp(loge[i , t])) #Likelihood i was infected at time t (and escaped prior to t)
+      inf[i , t] <- (exp(cum_log_p_uninf[i , t])) * (1 - exp(log_p_uninf[i , t])) #Likelihood i was infected at time t (and escaped prior to t)
       g[i , t] <- v[40 - t] #Likelihood of incubation period being 39.5 - t days
  
     for(j in 1:N.indexes[i]){
@@ -45,17 +45,16 @@ model{
       
       p[i,t,j] <- exp(logit_p[i,t,j])/exp(logit_p[i,t,j] + 1)  #Inverse logit
        
-      tp[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
+      log_p_uninf_j[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
 
-      #te[i , t , j] <- tp[1 + T[i , t , j]] #Log likl i escaped infection from j at time t (function of day of illness of j at t)
     }
-    loge[i , t] <- sum(tp[i , t ,1:N.contacts[i] ]) #Log likelihood i escaped infection from all contact at time t
+    log_p_uninf[i , t] <- sum(log_p_uninf_j[i , t ,1:N.contacts[i] ]) #Log likelihood i escaped infection from all contact at time t
    }
   
-    for( t in 2 : 38 ) {
-      ploge[i , t] <- ploge[i , t - 1] + loge[i , t-1] #Log likl i escaped infection from all contact prior to time t
+    for( t in 2: N_times[i] ) {
+      cum_log_p_uninf[i , t] <- cum_log_p_uninf[i , t - 1] + log_p_uninf[i , t-1] #Log likl i escaped infection from all contact prior to time t
     }
-    ploge[i , 1] <- 0 #Log likl of escaping infection prior to t=1 (Note the order you define things doesn’t matter)
+    cum_log_p_uninf[i , 1] <- 0 #Log likl of escaping infection prior to t=1 (Note the order you define things doesn’t matter)
   }
   
   a ~ dgamma(.001,.001) #Uninformative priors for hyper-parameters of gamma-distributed incubation period

@@ -46,13 +46,13 @@ model{
       
       p[i,t,j] <- exp(logit_p[i,t,j])/exp(logit_p[i,t,j] + 1)  #Inverse logit
        
-      log_p_uninf_j[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
-
     }
-    log_p_uninf[i , t] <- sum(log_p_uninf_j[i , t ,1:N.contacts[i] ]) #Log likelihood i escaped infection from all contact at time t
    }
   
     for( t in 2: N_times[i] ) {
+    
+      log_p_uninf_j[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
+      log_p_uninf[i , t] <- sum(log_p_uninf_j[i , t ,1:N.contacts[i] ]) #Log likelihood i escaped infection from all contact at time t
       cum_log_p_uninf[i , t] <- cum_log_p_uninf[i , t - 1] + log_p_uninf[i , t-1] #Log likl i escaped infection from all contact prior to time t
     }
     cum_log_p_uninf[i , 1] <- 0 #Log likl of escaping infection prior to t=1 (Note the order you define things doesn’t matter)

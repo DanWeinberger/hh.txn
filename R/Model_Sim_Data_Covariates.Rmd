@@ -1,0 +1,65 @@
+## Generate simulated data
+nY vector[2400]
+T [2400,30]
+incub[81]
+obs[81]
+
+```{r}
+source('./generate_data_Ginnycode.R')
+ds <- readRDS('../data/data.list.rds')
+data.sim <- gen_sim_data()
+
+T <- data.sim$T  #These dimensions not right!
+T <- array(T,dim=c(2400,38,1))
+#T <- data.list$T
+nY <- data.sim$nY
+N_infected <- length(nY) - sum(nY)
+N_uninfected <- sum(nY)
+uninfected_indices <- which(nY==1)
+infected_indices <- which(nY==0)
+
+#Obs and incub from the observed data
+obs <- ds$obs
+incub <- ds$incub
+N.indexes <- rep(1,nrow(T))
+N_times <- rep(38,length(nY))
+
+```
+
+
+Read in model
+```{r}
+source('../model/de_novo_covariates_test.R')
+```
+
+```{r}
+##############################################################
+#Model Fitting
+##############################################################
+inits1=list(".RNG.seed"=c(123), ".RNG.name"='base::Wichmann-Hill')
+inits2=list(".RNG.seed"=c(456), ".RNG.name"='base::Wichmann-Hill')
+inits3=list(".RNG.seed"=c(789), ".RNG.name"='base::Wichmann-Hill')
+
+
+
+##############################################
+#Model Organization
+##############################################
+model_spec<-textConnection(model_string)
+model_jags<-jags.model(model_spec, 
+                       inits=list(inits1,inits2, inits3),
+                       data=list('T'=T,
+                                 'nY'=nY,
+                                 'N_times'=N_times,
+                                 'N_contacts'=length(nY),
+                                 'N.indexes'=N.indexes,
+                                 'nY2'=nY,
+                                 'obs'=as.vector(obs),
+                                 'incub'=incub),
+                       n.adapt=10000, 
+                       n.chains=3)
+
+```
+
+
+

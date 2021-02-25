@@ -14,7 +14,7 @@
 model_string <- "
 
 model{
-{
+
     d <- T+1
     p[1:N_contacts,1,] <- 0 #Probability of transmission when NOT exposed to index case
     log_p_uninf_j[1:N_contacts,1,] <- log(1 - p[1:N_contacts,1,]) #Log probability of NO transmission on day d
@@ -59,7 +59,7 @@ model{
   a ~ dgamma(.001,.001) #Uninformative priors for hyper-parameters of gamma-distributed incubation period
   b ~ dgamma(.001,.001)
   
-  for(d in in 1:14){
+  for(d in 1:14){
     alpha[d] ~dnorm(0,1e-4)
   }
   for(k in 1:4){

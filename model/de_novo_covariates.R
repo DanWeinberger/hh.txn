@@ -15,8 +15,7 @@ model_string <- "
 
 model{
 {
-  d <- T+1
-
+    d <- T+1
     p[1:N_contacts,1,] <- 0 #Probability of transmission when NOT exposed to index case
     log_p_uninf_j[1:N_contacts,1,] <- log(1 - p[1:N_contacts,1,]) #Log probability of NO transmission on day d
     cum_log_p_uninf[1:N_contacts , 1] <- 0 #Log likl of escaping infection prior to t=1 (Note the order you define things doesn’t matter)

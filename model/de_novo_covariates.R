@@ -5,6 +5,12 @@
 #prob_transmission_function <- function(){
 
 
+#Notes: we have date of test, need a distribution to account for date of infection
+##38 days max is from old paper--might want to have earlier
+
+#Dirichlet for incubation?
+
+
 model_string <- "
 
 model{
@@ -63,20 +69,8 @@ model{
   for(k in 1:4){
   beta[k] ~dnorm(0,1e-4)
   }
-  
-  for( t in 2 : 42 ) {
-    v[t] <- exp((a - 1) * log(b * (t - 1.5)) - b * (t - 1.5) - loggam(a)) * b #Incubation period is gamma distributed with
-  } 
-  
 
-  # v[1] <- 0
-  # for( i in 1 : 81 ) {
-  #     obs[i] ~ dbern(Q[i]) #obs is the infection status of cases with known incubation period (=1)
-  #     Q[i] <- sum(expos[i , ]) #Likelihood of all possible incubation periods for 81 contacts with known exposure period
-  # 
-  #   for( j in 1 : 41 ) {
-  #     expos[i , j] <- v[incub[i , j] + 1] / sum(v[]) #Likelihood incubation period for i is incub[i,j] days
-  #   }
-  # }
+  #v[t] ~ #Incubation period
+
 
 }"

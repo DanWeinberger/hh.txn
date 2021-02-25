@@ -65,11 +65,11 @@ library(reshape2)
  
  
  ###Simulate More people
- gen.uninfected.contact <- function(){
+ gen.uninfected.contact <- function(idN){
     N.indexes <- min(1+ rpois(n=1,1.5),5) #cap at 5
     df1 <- as.data.frame(matrix(NA, nrow=N.indexes, ncol=2))
     names(df1) <- c('contactID', 'indexID')
-    df1$contactID <- 1
+    df1$contactID <- idN
     df1$indexID <- 1:N.indexes
     first.date <- '2020-04-01'
     df1$date.index.test <- sample(seq(as.Date(first.date), as.Date(first.date)+14, by="day"), N.indexes)
@@ -78,22 +78,62 @@ library(reshape2)
     df1$fu.time <- as.numeric(df1$date.contact.test - df1$date.index.test) +1
     df1$infected <-0
     df1$date.df <- as.Date(NA) 
+    return(df1)
  }
  
- gen.infected.contact <- function(){
+ gen.infected.contact <- function(idN){
     N.indexes <- min(1+ rpois(n=1,1.5),5) #cap at 5
     df1 <- as.data.frame(matrix(NA, nrow=N.indexes, ncol=2))
     names(df1) <- c('contactID', 'indexID')
-    df1$contactID <- 1
+    df1$contactID <- idN
     df1$indexID <- 1:N.indexes
     first.date <- '2020-04-01'
     df1$date.index.test <- sample(seq(as.Date(first.date), as.Date(first.date)+14, by="day"), N.indexes)
     df1$date.contact.test <- df1$date.index.test + rpois(n=1,5) +1
-
     df1$fu.time <- as.numeric(df1$date.contact.test - df1$date.index.test) +1
     df1$infected <-1
-    df1$date.df <- as.Date(df1$date.contact.test) 
+    df1$date.df <- as.Date(df1$date.contact.test)
+    return(df1)
  }
  
+ #Generate the data
+ uninfected_list <- lapply(1:1200,gen.uninfected.contact )
+ infected_list <- lapply(1201:2400,gen.infected.contact)
+
+ #Combine the data frames into 1
+ all_subjects <- do.call('rbind.data.frame', c(uninfected_list,infected_list)) 
+
+ timepoints <- max(all_subjects$fu.time)
+ N.index <- max(all_subjects$indexID)
+ N.contact <- max(all_subjects$contactID) 
  
+ T <- array(0, dim=c(N.contact,timepoints, N.index))
+ vax1.index <- array(0, dim=c(N.contact,timepoints, N.index))
+ vax2.index <- array(0, dim=c(N.contact,timepoints, N.index))
+ 
+ vax1.contact <- array(0, dim=c(N.contact,timepoints))
+ vax2.contact <- array(0, dim=c(N.contact,timepoints))
+ 
+ for(i in 1:N.contact){
+    ds <- all_subjects[all_subjects$contactID==i,]
+    
+    #For uninfected people
+    if(max(ds$infected==0)){
+       
+       for(j in 1:max(ds$indexID) ){
+          T[i, 1:ds$fu.time[j],j] <- 1:ds$fu.time[j]
+       }
+       
+       #For infected people
+    }else{
+       ds$start.obs.index <- ds$fu.time - as.numeric(ds$date.df - ds$date.index.test )
+       ds$end.obs.index <- ds$start.obs.index + ds$fu.time -1
+       for(j in 1:max(ds$indexID) ){
+          T[i,ds$start.obs.index[j]:ds$end.obs.index[j] ,j] <- 1:ds$fu.time[j]
+       }
+    }
+    
+    
+    
+ }
  

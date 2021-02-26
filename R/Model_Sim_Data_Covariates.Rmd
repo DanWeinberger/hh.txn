@@ -24,7 +24,7 @@ obs <- ds$obs
 incub <- ds$incub
 N.indexes <- rep(1,nrow(T))
 N_times <- rep(38,length(nY))
-
+d=array(T+1,dim=c(nrow(T),ncol(T),1))
 ```
 
 
@@ -50,6 +50,7 @@ model_spec<-textConnection(model_string)
 model_jags<-jags.model(model_spec, 
                        inits=list(inits1,inits2, inits3),
                        data=list('T'=T,
+                                 #'d'=d,
                                  'nY'=nY,
                                  'N_times'=N_times,
                                  'N_contacts'=length(nY),

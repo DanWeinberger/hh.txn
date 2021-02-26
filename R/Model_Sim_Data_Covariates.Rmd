@@ -5,6 +5,7 @@ incub[81]
 obs[81]
 
 ```{r}
+library(rjags)
 source('./generate_data_Ginnycode.R')
 ds <- readRDS('../data/data.list.rds')
 data.sim <- gen_sim_data()

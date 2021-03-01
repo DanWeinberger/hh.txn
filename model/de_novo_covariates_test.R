@@ -12,21 +12,9 @@
 
 
 model_string <- "
-
 model{
 
-  d <- T+1
-  for(i in 1: N_contacts){  
-   p[i,1,1] <- 0 #Probability of transmission when NOT exposed to index case
-   for(j in 1:N.indexes[i]){
-    log_p_uninf_j[i,1,j] <- log(1 - p[i,1,j]) #Log probability of NO transmission on day d
-    log_p_uninf_j[i,1,j] <- log(1 - p[i,1,j]) #Log probability of NO transmission on day d
-  }
-  }
- # p[1:N_contacts,1,] <- 0 #Probability of transmission when NOT exposed to index case
- # log_p_uninf_j[1:N_contacts,1,] <- log(1 - p[1:N_contacts,1,]) #Log probability of NO transmission on day d
- #  cum_log_p_uninf[1:N_contacts,1] <- 0 #Log likl of escaping infection prior to t=1 (Note the order you define things doesn’t matter)
-  
+
   for(i in 1: N_contacts){
   
   nY[i] ~ dbern(q[i]) #nY is our data on whether the contact was NOT infected (0=infected, 1=not infected),
@@ -46,14 +34,15 @@ model{
   ## the vaccine status of the index and the contact at time t
   ## Is d= T+1?
   
-  logit_p[i,t,j] <- (alpha[d[i,t,j]] 
+  logit_p[i,t,j] <- (alpha[(T[i,t,j]+1) ] 
   #just baseline
   #+ #Baseline prob probability of transmission on day d-1 of index case illness
   #beta[1]*vax1.index[t,i,j] +  beta[2]*vax2.index[t,i,j] + #Effect of vaccination of the index
   #beta[3]*vax1.contact[t,i] +   beta[4]*vax2.contact[t,i]    ##effect of vaccinaion of the contact       
   )
   
-  p[i,t,j] <- exp(logit_p[i,t,j])/exp(logit_p[i,t,j] + 1)  #Inverse logit
+  #When t=1, p[i,t,j]=0
+  p[i,t,j] <- (t>1)*exp(logit_p[i,t,j])/exp(logit_p[i,t,j] + 1)  #Inverse logit
   log_p_uninf_j[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
   }
   log_p_uninf[i,t] <- sum(log_p_uninf_j[i , t ,1:N.indexes[i] ]) #Log likelihood i escaped infection from all contact at time t
@@ -69,8 +58,8 @@ model{
   a ~ dgamma(.001,.001) #Uninformative priors for hyper-parameters of gamma-distributed incubation period
   b ~ dgamma(.001,.001)
   
-  for(d in 1:14){
-  alpha[d] ~dnorm(0,1e-4)
+  for(d in 1:max.t){
+    alpha[d] ~dnorm(0,1e-4)
   }
   for(k in 1:4){
   beta[k] ~dnorm(0,1e-4)

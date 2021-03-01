@@ -46,7 +46,7 @@ model{
   ## the vaccine status of the index and the contact at time t
   ## Is d= T+1?
   
-  logit_p[i,t,j] <- (alpha[d[t,i,j]] 
+  logit_p[i,t,j] <- (alpha[d[i,t,j]] 
   #just baseline
   #+ #Baseline prob probability of transmission on day d-1 of index case illness
   #beta[1]*vax1.index[t,i,j] +  beta[2]*vax2.index[t,i,j] + #Effect of vaccination of the index

@@ -6,12 +6,13 @@ obs[81]
 
 ```{r}
 library(rjags)
-source('./generate_data_Ginnycode.R')
+#source('./generate_data_Ginnycode.R')
+source('./generate_data_Ginnycode_SHORT.R') #Just 240 people
 ds <- readRDS('../data/data.list.rds')
 data.sim <- gen_sim_data()
 
 T <- data.sim$T  #These dimensions not right!
-T <- array(T,dim=c(2400,38,1))
+T <- array(T,dim=c(nrow(T),ncol(T),1))
 #T <- data.list$T
 nY <- data.sim$nY
 N_infected <- length(nY) - sum(nY)

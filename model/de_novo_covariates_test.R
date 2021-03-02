@@ -66,6 +66,7 @@ model{
     beta[k] ~dnorm(0,1e-4)
   }
   
+  #Distribution for incubation period: note this will be replaced with an informative prior
   for( t in 2 : 42 ) {
     v[t] <- exp((a - 1) * log(b * (t - 1.5)) - b * (t - 1.5) - loggam(a)) * b #Incubation period is gamma distributed with
   } 

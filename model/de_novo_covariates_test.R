@@ -8,8 +8,6 @@
 #Notes: we have date of test, need a distribution to account for date of infection
 ##38 days max is from old paper--might want to have earlier
 
-#Dirichlet for incubation?
-
 
 model_string <- "
 model{

@@ -17,15 +17,14 @@ model{
 
   for(i in 1: N_contacts){
   
-    Uninf.state[i] ~ dbern(q[i]) #nY is our data on whether the contact was NOT infected (0=infected, 1=not infected),
+    Uninf.state[i] ~ dbern(q[i]) #Uninf.state is our data on whether the contact was NOT infected (1=uinfected, 0=infected),
     
-    q[i] <- Uninf.state[i]*exp(log_p_uninf[i , N_times[i]]) + #Likelihood uninfected contact escaped infection
+    q[i] <- Uninf.state[i]*exp(cum_log_p_uninf[i , N_times[i]]) + #Likelihood uninfected contact escaped infection
             (1- Uninf.state[i])*(1 - inprod(g[i , ],inf[i , ])) #Likelihood infected contact escaped infection
-    
   
     for(t in 1: N_times[i]){
     
-      inf[i , t] <- (exp(cum_log_p_uninf[i , t])) * (1 - exp(log_p_uninf[i , t])) #Likelihood i was infected at time t (and escaped prior to t)
+      inf[i , t] <- exp(cum_log_p_uninf[i , t]) * (1 - exp(log_p_uninf[i , t])) #Likelihood i was infected at time t (and escaped prior to t)
       g[i , t] <- v[40 - t] #Likelihood of incubation period being 39.5 - t days
     
           #Define prob infection for person i, from contact j at time t

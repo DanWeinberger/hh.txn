@@ -6,6 +6,7 @@ obs[81]
 
 ```{r}
 library(rjags)
+library(HDInterval)
 #source('./generate_data_Ginnycode.R')
 source('./generate_data_Ginnycode_SHORT.R') #Just 240 people
 ds <- readRDS('../data/data.list.rds')
@@ -22,17 +23,18 @@ uninfected_indices <- which(Inf.state==0)
 infected_indices <- which(Inf.state==1)
 
 #Obs and incub from the observed data
-obs <- ds$obs
-incub <- ds$incub
+
 N.indexes <- rep(1,nrow(T))
 N_times <- rep(38,length(Inf.state))
-d=array(T+1,dim=c(nrow(T),ncol(T),1))
+
+incub.period <- c(0,0.15,0.15,0.13,0.11,0.09,0.07,0.06,0.04,0.04,0.03,0.02,0.02, 0.01,0.01, 0.007)   #from day 1 to day 15
+incub.period <- c(incub.period, rep(0, (max(N_times)-length(incub.period)) ))
 ```
 
 
 Read in model
 ```{r}
-source('../model/de_novo_covariates_test.R')
+source('../model/de_novo_covariates.R')
 ```
 
 ```{r}
@@ -59,10 +61,39 @@ model_jags<-jags.model(model_spec,
                                  'Uninf.state' = nY,
                                   'Uninf.state2'= nY,
                                  'max.t'=(max(T)+1),
-                                 'obs'=as.vector(obs),
-                                 'incub'=incub),
+                                  'v' = incub.period),
                        n.adapt=10000, 
                        n.chains=3)
+
+```
+
+```{r}
+params<-c('alpha',
+          'v')
+
+##############################################
+#Posterior Sampling
+##############################################
+posterior_samples<-coda.samples(model_jags, 
+                                params, 
+                                n.iter=10000)
+posterior_samples.all<-do.call(rbind,posterior_samples)
+
+post_means<-apply(posterior_samples.all, 2, median)
+sample.labs<-names(post_means)
+ci<-t(hdi(posterior_samples.all, credMass = 0.95))
+ci<-matrix(sprintf("%.1f",round(ci,1)), ncol=2)
+row.names(ci)<-sample.labs
+post_means<-sprintf("%.1f",round(post_means,1))
+names(post_means)<-sample.labs
+
+alpha.index <- grep('alpha',sample.labs)
+v.index <- grep('v',sample.labs)
+
+ci[alpha.index,]
+ci[v.index,]
+
+
 
 ```
 

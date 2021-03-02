@@ -6,8 +6,14 @@
 
 
 #Notes: we have date of test, need a distribution to account for date of infection
+## Or does this cancel out because we have date of test for both index and the contact, assuming they have same delay distribution from infection to test
 ##38 days max is from old paper--might want to have earlier
 
+##Need to add in community transmission rate
+## We will miss the 
+
+#Refs:
+#LancetID study covid-19 Li https://www.thelancet.com/cms/10.1016/S1473-3099(20)30981-6/attachment/aa38eb0c-395b-4a9a-93de-5977ce4b6a1b/mmc2.pdf
 
 model_string <- "
 model{

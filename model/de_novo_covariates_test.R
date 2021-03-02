@@ -17,43 +17,39 @@ model{
 
   for(i in 1: N_contacts){
   
-  Uninf.state[i] ~ dbern(q[i]) #nY is our data on whether the contact was NOT infected (0=infected, 1=not infected),
+    Uninf.state[i] ~ dbern(q[i]) #nY is our data on whether the contact was NOT infected (0=infected, 1=not infected),
+    
+    q[i] <- Uninf.state[i]*exp(log_p_uninf[i , N_times[i]]) + #Likelihood uninfected contact escaped infection
+            (1- Uninf.state[i])*(1 - inprod(g[i , ],inf[i , ])) #Likelihood infected contact escaped infection
+    
   
-  q[i] <- (1-Inf.state[i])*exp(log_p_uninf[i , N_times[i]]) + #Likelihood uninfected contact escaped infection
-          Inf.state[i]*(1 - inprod(g[i , ],inf[i , ])) #Likelihood infected contact escaped infection
-  
-  
-  for(t in 1: N_times[i]){
-  
-  inf[i , t] <- (exp(cum_log_p_uninf[i , t])) * (1 - exp(log_p_uninf[i , t])) #Likelihood i was infected at time t (and escaped prior to t)
-  g[i , t] <- v[40 - t] #Likelihood of incubation period being 39.5 - t days
-  
-  for(j in 1:N.indexes[i]){
-  #Define prob infection for person i, from contact j at time t
-  ## Is a function of the baseline prob for delay for index j and
-  ## the vaccine status of the index and the contact at time t
-  ## Is d= T+1?
-  
-  logit_p[i,t,j] <- (alpha[(T[i,t,j]+1) ] 
-  #just baseline
-  #+ #Baseline prob probability of transmission on day d-1 of index case illness
-  #beta[1]*vax1.index[t,i,j] +  beta[2]*vax2.index[t,i,j] + #Effect of vaccination of the index
-  #beta[3]*vax1.contact[t,i] +   beta[4]*vax2.contact[t,i]    ##effect of vaccinaion of the contact       
-  )
-  
-  #When t=1, p[i,t,j]=0
-  p[i,t,j] <- (t>1)*exp(logit_p[i,t,j])/exp(logit_p[i,t,j] + 1)  #Inverse logit
-  log_p_uninf_j[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
-  }
-  log_p_uninf[i,t] <- sum(log_p_uninf_j[i , t ,1:N.indexes[i] ]) #Log likelihood i escaped infection from all contact at time t
-  }
+    for(t in 1: N_times[i]){
+    
+      inf[i , t] <- (exp(cum_log_p_uninf[i , t])) * (1 - exp(log_p_uninf[i , t])) #Likelihood i was infected at time t (and escaped prior to t)
+      g[i , t] <- v[40 - t] #Likelihood of incubation period being 39.5 - t days
+    
+          #Define prob infection for person i, from contact j at time t
+          ## Is a function of the baseline prob for delay for index j and
+          ## the vaccine status of the index and the contact at time t
+        for(j in 1:N.indexes[i]){
+          logit_p[i,t,j] <- (alpha[(T[i,t,j]+1) ] 
+            #just baseline
+            #+ #Baseline prob probability of transmission on day d-1 of index case illness
+            #beta[1]*vax1.index[t,i,j] +  beta[2]*vax2.index[t,i,j] + #Effect of vaccination of the index
+            #beta[3]*vax1.contact[t,i] +   beta[4]*vax2.contact[t,i]    ##effect of vaccinaion of the contact       
+          )
+      
+      #When t=1, p[i,t,j]=0
+      p[i,t,j] <- (t>1)*exp(logit_p[i,t,j])/exp(logit_p[i,t,j] + 1)  #Inverse logit
+      log_p_uninf_j[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
+        }
+    log_p_uninf[i,t] <- sum(log_p_uninf_j[i , t ,1:N.indexes[i] ]) #Log likelihood i escaped infection from all contact at time t
+    }
   
   cum_log_p_uninf[i , 1] <- 0
   
-  for(t in 2:N_times[i]) {
-  #log_p_uninf_j[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
-  #log_p_uninf[i,t] <- sum(log_p_uninf_j[i , t ,1:N.contacts[i] ]) #Log likelihood i escaped infection from all contact at time t
-  cum_log_p_uninf[i , t] <- cum_log_p_uninf[i , t - 1] + log_p_uninf[i , t-1] #Log likl i escaped infection from all contact prior to time t
+    for(t in 2:N_times[i]) {
+      cum_log_p_uninf[i , t] <- cum_log_p_uninf[i , t - 1] + log_p_uninf[i , t-1] #Log likl i escaped infection from all contact prior to time t
     }
   }
   
@@ -63,8 +59,9 @@ model{
   for(d in 1:max.t){
     alpha[d] ~dnorm(0,1e-4)
   }
+  
   for(k in 1:4){
-  beta[k] ~dnorm(0,1e-4)
+    beta[k] ~dnorm(0,1e-4)
   }
   
   for( t in 2 : 42 ) {

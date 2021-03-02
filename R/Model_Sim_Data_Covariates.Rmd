@@ -14,17 +14,18 @@ data.sim <- gen_sim_data()
 T <- data.sim$T  #These dimensions not right!
 T <- array(T,dim=c(nrow(T),ncol(T),1))
 #T <- data.list$T
-nY <- data.sim$nY
-N_infected <- length(nY) - sum(nY)
-N_uninfected <- sum(nY)
-uninfected_indices <- which(nY==1)
-infected_indices <- which(nY==0)
+nY <- data.sim$nY #0= infected; 1=uninfected
+Inf.state <- 1 - nY 
+N_infected <-  sum(Inf.state )
+N_uninfected <-  length(Inf.state) - sum(Inf.state)
+uninfected_indices <- which(Inf.state==0)
+infected_indices <- which(Inf.state==1)
 
 #Obs and incub from the observed data
 obs <- ds$obs
 incub <- ds$incub
 N.indexes <- rep(1,nrow(T))
-N_times <- rep(38,length(nY))
+N_times <- rep(38,length(Inf.state))
 d=array(T+1,dim=c(nrow(T),ncol(T),1))
 ```
 
@@ -52,11 +53,11 @@ model_jags<-jags.model(model_spec,
                        inits=list(inits1,inits2, inits3),
                        data=list('T'=T,
                                  #'d'=d,
-                                 'nY'=nY,
                                  'N_times'=N_times,
-                                 'N_contacts'=length(nY),
+                                 'N_contacts'=length(Inf.state),
                                  'N.indexes'=N.indexes,
-                                 'nY2'=nY,
+                                 'Inf.state'=Inf.state,
+                                 'Uninf.state' = nY,
                                  'max.t'=(max(T)+1),
                                  'obs'=as.vector(obs),
                                  'incub'=incub),

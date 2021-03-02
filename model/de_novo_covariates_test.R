@@ -17,10 +17,10 @@ model{
 
   for(i in 1: N_contacts){
   
-  nY[i] ~ dbern(q[i]) #nY is our data on whether the contact was NOT infected (0=infected, 1=not infected),
+  Uninf.state[i] ~ dbern(q[i]) #nY is our data on whether the contact was NOT infected (0=infected, 1=not infected),
   
-  q[i] <- (1-nY2[i])*exp(log_p_uninf[i , N_times[i]]) + #Likelihood uninfected contact escaped infection
-          nY2[i]*(1 - inprod(g[i , ],inf[i , ])) #Likelihood infected contact escaped infection
+  q[i] <- (1-Inf.state[i])*exp(log_p_uninf[i , N_times[i]]) + #Likelihood uninfected contact escaped infection
+          Inf.state[i]*(1 - inprod(g[i , ],inf[i , ])) #Likelihood infected contact escaped infection
   
   
   for(t in 1: N_times[i]){

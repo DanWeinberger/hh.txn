@@ -42,7 +42,7 @@ model{
            )
       
             #When t=1, p[i,t,j]=0
-            p[i,t,j] <- (t>1)*exp(logit_p[i,t,j])/exp(logit_p[i,t,j] + 1)  #Inverse logit
+            p[i,t,j] <- (t>1)*exp(logit_p[i,t,j])/(exp(logit_p[i,t,j]) + 1)  #Inverse logit
             log_p_uninf_j[i,t, j] <- log(1 - p[i,t,j]) #log(Prob NOT infected)
         }
     log_p_uninf[i,t] <- sum(log_p_uninf_j[i , t ,1:N.indexes[i] ]) #Log likelihood i escaped infection from all contact at time t

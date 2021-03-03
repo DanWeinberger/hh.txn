@@ -1,0 +1,84 @@
+---
+title: "Household_cluster_size"
+author: "Dan Weinberger"
+date: "3/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Some issues
+1) We don't know the date of infection; only the date when a person is tested
+2) Vaccine could prevent symptoms but not infection, so unvaccinated HH member might get tested first (incorrectly appearing as index)
+3) As time goes on and more people are vaccinated, te index cases are more likely to be younger and might not be comparable to index cases from earlier in study
+4) Decision to get tested could be influenced by vaccination
+5) Decision to get tested is influenced by presence of an infected HH member
+6) If people were infected/positive earlier in epidemic, need to exclude them as susceptibles
+
+Longini paper: https://academic.oup.com/aje/article/115/5/736/153401?login=true
+"A great deal of information concerning community transmission is contained in the comparison between households that had no infections and those experiencing at least one infection."
+
+*B* as the probability that a susceptible household member escapes being infected from the community during the period of observation
+
+*Q* as the probability a household member escapes infectious contact from a single infected household member during his entire infectious period
+
+the probability that **j** of **k** initial susceptibles become infected in a particular household during the period of observation can be found.
+
+m_jk gives probability that j of k susceptibles become infected
+
+```{r}
+ds <- matrix(c(340,197,84,60,25,11,3,2,1,0,
+                 164,104,60,29,15,6,4,2,0,0,
+                 0,57,57,25,9,4,0,3,0,1,
+                 0,0,27,11,10,3,3,3,0,0,
+                 0,0,0,7,1,0,2,0,0,0,
+                 0,0,0,0,1,1,3,0,0,0,
+                 rep(0,5),1,rep(0,4),
+                 rep(0,6),1,1,0,0,
+                 rep(0,30)),
+               nrow=11,byrow=T)
+
+max.hh.size= ncol(ds) # Maximum household size = # of columns 
+choose_kj_mat <- matrix(0, nrow=max.hh.size, ncol=max.hh.size)
+for(k in 2: max.hh.size){
+  for(j in 1:k){
+    choose_kj_mat[k,j] <- choose(k,j)
+  }
+}
+
+```
+
+
+```{r}
+source('./R/longini_jags.R')
+```
+
+```{r}
+##############################################################
+#Model Fitting
+##############################################################
+inits1=list(".RNG.seed"=c(123), ".RNG.name"='base::Wichmann-Hill')
+inits2=list(".RNG.seed"=c(456), ".RNG.name"='base::Wichmann-Hill')
+inits3=list(".RNG.seed"=c(789), ".RNG.name"='base::Wichmann-Hill')
+
+
+
+##############################################
+#Model Organization
+##############################################
+model_spec<-textConnection(longini_jags)
+model_jags<-jags.model(model_spec, 
+                       inits=list(inits1,inits2, inits3),
+                       data=list( 
+                                 'ds'=ds,
+                                 'max.hh.size'=max.hh.size,
+                                 'choose_kj_mat'=choose_kj_mat
+                                 ),
+                       n.adapt=10000, 
+                       n.chains=3)
+
+```
+

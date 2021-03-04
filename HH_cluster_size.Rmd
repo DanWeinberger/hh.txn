@@ -30,18 +30,26 @@ the probability that **j** of **k** initial susceptibles become infected in a pa
 m_jk gives probability that j of k susceptibles become infected
 
 ```{r}
-ds <- matrix(c(340,197,84,60,25,11,3,2,1,0,
+
+#Columns=HH size; rows=N infected 0:7)
+#This data isn't quite right--don't have any HH of size 1 (smallest is size 2)
+ds <- t(matrix(c(340,197,84,60,25,11,3,2,1,0,
                  164,104,60,29,15,6,4,2,0,0,
                  0,57,57,25,9,4,0,3,0,1,
                  0,0,27,11,10,3,3,3,0,0,
                  0,0,0,7,1,0,2,0,0,0,
                  0,0,0,0,1,1,3,0,0,0,
-                 rep(0,5),1,rep(0,4),
-                 rep(0,6),1,1,0,0,
-                 rep(0,30)),
-               nrow=11,byrow=T)
+                 rep(0,6),1,1,0,0,rep(0,40)),
+               ncol=11))
 
-max.hh.size= ncol(ds) # Maximum household size = # of columns 
+# #Number of kids in each cell, rather than N of households
+# dsN <- matrix(NA, nrow=nrow(ds), ncol=ncol(ds))
+# for(i in 1: ncol(ds)){
+#   dsN[,i] <- ds[,i] *i
+# }
+
+max.hh.size <- ncol(ds)
+
 choose_kj_mat <- matrix(0, nrow=max.hh.size, ncol=max.hh.size)
 for(k in 2: max.hh.size){
   for(j in 1:k){
@@ -65,7 +73,6 @@ inits2=list(".RNG.seed"=c(456), ".RNG.name"='base::Wichmann-Hill')
 inits3=list(".RNG.seed"=c(789), ".RNG.name"='base::Wichmann-Hill')
 
 
-
 ##############################################
 #Model Organization
 ##############################################
@@ -74,11 +81,75 @@ model_jags<-jags.model(model_spec,
                        inits=list(inits1,inits2, inits3),
                        data=list( 
                                  'ds'=ds,
-                                 'max.hh.size'=max.hh.size,
-                                 'choose_kj_mat'=choose_kj_mat
+                                 'max.hh.size'=ncol(ds),
+                                 'n.hh'= apply(ds,2,sum),
+                                 'choose_kj_mat'=choose_kj_mat,
+                                  'max.contacts' = 1:ncol(ds)
                                  ),
                        n.adapt=10000, 
                        n.chains=3)
 
 ```
+
+```{r}
+params<-c('B','Q')
+
+##############################################
+#Posterior Sampling
+##############################################
+posterior_samples<-coda.samples(model_jags, 
+                                params, 
+                                n.iter=10000)
+posterior_samples.all<-do.call(rbind,posterior_samples)
+
+post_median<-apply(posterior_samples.all, 2, median)
+sample.labs<-names(post_median)
+ci<-t(hdi(posterior_samples.all, credMass = 0.95))
+ci <- cbind(post_median,ci)
+row.names(ci)<-sample.labs
+names(post_median)<-sample.labs
+
+B.index <- grep('B',sample.labs)
+Q.index <- grep('Q',sample.labs)
+
+CPI.mcmc <- 1- ci[B.index,]
+SAR.mcmc <- 1-ci[Q.index,]
+
+
+
+
+```
+
+
+LL approach
+```{r}
+source(file="./R/longiniLL.R")
+```
+
+Find opitimal values of B and Q by minimizing the negative log-likelihood
+```{r}
+BQest <- optim(c(0.9,0.5),longiniLL,data=ds)$par
+```
+
+What is the estimated community probability of infection (CPI) and 
+    secondary attack rate (SAR)?
+
+```{r}
+CPI.ll <- 1 - BQest[1]
+SAR.ll <- 1 - BQest[2]
+```
+
+Compare MCMC and LL approaches
+```{r}
+CPI.ll
+CPI.mcmc
+
+
+SAR.ll
+SAR.mcmc
+```
+
+
+
+
 

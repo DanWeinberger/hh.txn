@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(abind)
 ```
 
 
@@ -33,14 +34,22 @@ m_jk gives probability that j of k susceptibles become infected
 
 #Columns=HH size; rows=N infected 0:7)
 #This data isn't quite right--don't have any HH of size 1 (smallest is size 2)
-ds <- t(matrix(c(340,197,84,60,25,11,3,2,1,0,
-                 164,104,60,29,15,6,4,2,0,0,
-                 0,57,57,25,9,4,0,3,0,1,
-                 0,0,27,11,10,3,3,3,0,0,
-                 0,0,0,7,1,0,2,0,0,0,
-                 0,0,0,0,1,1,3,0,0,0,
-                 rep(0,6),1,1,0,0,rep(0,40)),
-               ncol=11))
+# ds <- t(matrix(c(340,197,84,60,25,11,3,2,1,0,
+#                  164,104,60,29,15,6,4,2,0,0,
+#                  0,57,57,25,9,4,0,3,0,1,
+#                  0,0,27,11,10,3,3,3,0,0,
+#                  0,0,0,7,1,0,2,0,0,0,
+#                  0,0,0,0,1,1,3,0,0,0,
+#                  rep(0,6),1,1,0,0,rep(0,40)),
+#                ncol=11))
+
+#Data from longini
+ds <- t(matrix(c(40,63,18,17,3,
+               4,12,10,5,4,
+               0,2,3,3,2,
+               0,0,2,3,2,
+               0,0,0,1,1,
+               0,0,0,0,0), nrow=5 ))
 
 # #Number of kids in each cell, rather than N of households
 # dsN <- matrix(NA, nrow=nrow(ds), ncol=ncol(ds))
@@ -83,8 +92,7 @@ model_jags<-jags.model(model_spec,
                                  'ds'=ds,
                                  'max.hh.size'=ncol(ds),
                                  'n.hh'= apply(ds,2,sum),
-                                 'choose_kj_mat'=choose_kj_mat,
-                                  'max.contacts' = 1:ncol(ds)
+                                 'choose_kj_mat'=choose_kj_mat
                                  ),
                        n.adapt=10000, 
                        n.chains=3)
@@ -140,16 +148,130 @@ SAR.ll <- 1 - BQest[2]
 ```
 
 Compare MCMC and LL approaches
+Agrees well with the original estimates for SAR and CPI from the Longini paper
 ```{r}
+#In original paper Q_hat=0.853; B_Hat=0.868
+
 CPI.ll
 CPI.mcmc
-
+1- 0.868
 
 SAR.ll
 SAR.mcmc
+1-0.853
+
+```
+
+## Covariates
+
+stratify by whether they have children
+
+```{r}
+source('./R/longini_jags_covariates.R')
+```
+
+```{r}
+#Generate dataset--super dumb way to do it--have N infected HH in ds2 half of those in ds1--to do this right need a simulation
+
+# ds2 <- t(matrix(
+#   c(rpois(length(ds[1,]), lambda=ds[1,] ),
+#     rpois(length(ds[-1,]), lambda=(ds[-1,]*0.5) ))
+#     , nrow=ncol(ds)
+#     ))
+
+#Table 6; hh w children
+ds1 <- t(matrix(c( 0, 0, 17,15,3,
+          0, 0, 8,5,4, 
+          0,0,3,3,2,
+          0,0,2,3,2,
+          0,0,0,1,1,
+          0,0,0,0,0
+          ),nrow=5))
+ds2 <- t(matrix(c(40,61,0,0,0,
+         4,11,0,0,0,
+         0,1,0,0,0,
+         rep(0,5*3)),
+          nrow=5)
+         )
+         
+         
+
+ds.vax.array <- abind(ds1,ds2, along=3)
+
+
 ```
 
 
+```{r}
+##############################################################
+#Model Fitting
+##############################################################
+inits1=list(".RNG.seed"=c(1234), ".RNG.name"='base::Wichmann-Hill')
+inits2=list(".RNG.seed"=c(4567), ".RNG.name"='base::Wichmann-Hill')
+inits3=list(".RNG.seed"=c(6789), ".RNG.name"='base::Wichmann-Hill')
 
+
+##############################################
+#Model Organization
+##############################################
+model_spec<-textConnection(longini_jags_covar)
+model_jags_covar<-jags.model(model_spec, 
+                       inits=list(inits1,inits2, inits3),
+                       data=list( 
+                                 'ds'=ds.vax.array,
+                                 'max.hh.size'=dim(ds.vax.array)[2],
+                                 'n.hh'= apply(ds.vax.array,c(2,3),sum),
+                                 'choose_kj_mat'=choose_kj_mat,
+                                  'max.contacts' = 1:dim(ds.vax.array)[2]
+                                 ),
+                       n.adapt=10000, 
+                       n.chains=3)
+
+```
+```{r}
+params<-c('B','Q', 'beta1','delta1','alpha1','alpha2')
+
+##############################################
+#Posterior Sampling
+##############################################
+posterior_samples_covar<-coda.samples(model_jags_covar, 
+                                params, 
+                                n.iter=10000)
+posterior_samples.covar.all<-do.call(rbind,posterior_samples_covar)
+
+post_median<-apply(posterior_samples.covar.all, 2, median)
+sample.labs<-names(post_median)
+ci<-t(hdi(posterior_samples.covar.all, credMass = 0.95))
+ci <- cbind(post_median,ci)
+row.names(ci)<-sample.labs
+names(post_median)<-sample.labs
+
+B1.index <- grep('B[1]',sample.labs, fixed=T)
+B2.index <- grep('B[2]',sample.labs, fixed=T)
+
+Q1.index <- grep('Q[1]',sample.labs, fixed=T)
+Q2.index <- grep('Q[2]',sample.labs, fixed=T)
+
+beta1.index <- grep('beta1', sample.labs, fixed=T)
+
+CPI1.mcmc <- 1- ci[B1.index,]
+CPI2.mcmc <- 1- ci[B2.index,]
+
+SAR1.mcmc <- 1-ci[Q1.index,]
+SAR2.mcmc <- 1-ci[Q2.index,]
+
+beta1.mcmc <- 1-ci[beta1.index,]
+
+CPI.mcmc
+SAR.mcmc
+
+#Ratio of CPI for HH with and without kids 
+CPI1.samples <- 1 - posterior_samples.covar.all[,B1.index]
+CPI2.samples <- 1 - posterior_samples.covar.all[,B2.index]
+CPI.ratio.samples <- log(CPI1.samples / CPI2.samples)
+CPI.ratio.hdi <-  exp(c(median(CPI.ratio.samples), t(hdi(CPI.ratio.samples, credMass = 0.95))))
+CPI.ratio.hdi
+
+```
 
 

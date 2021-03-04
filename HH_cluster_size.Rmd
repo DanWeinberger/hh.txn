@@ -267,9 +267,19 @@ SAR.mcmc
 #Ratio of CPI for HH with and without kids 
 CPI1.samples <- 1 - posterior_samples.covar.all[,B1.index]
 CPI2.samples <- 1 - posterior_samples.covar.all[,B2.index]
-CPI.ratio.samples <- log(CPI1.samples / CPI2.samples)
-CPI.ratio.hdi <-  exp(c(median(CPI.ratio.samples), t(hdi(CPI.ratio.samples, credMass = 0.95))))
-CPI.ratio.hdi
+#CPI.log.ratio.samples <- log(CPI1.samples / CPI2.samples)
+CPI.ratio.samples <- CPI1.samples / CPI2.samples
+
+##Equal tailed interval ives same result if use log or original scale
+quantile(CPI.ratio.samples, probs=c(0.025,0.5,0.975))
+#exp(quantile(CPI.log.ratio.samples, probs=c(0.025,0.5,0.975)) )
+
+#CPI.ratio.hdi_log_exp <-  exp(c(median(CPI.log.ratio.samples), t(hdi(CPI.log.ratio.samples, credMass = 0.95))))
+
+CPI.ratio.hdi <-  c(median(CPI.ratio.samples), t(hdi(CPI.ratio.samples, credMass = 0.95)))
+
+CPI.ratio.hdi ##This is the one suggested by Josh
+#CPI.ratio.hdi_log_exp
 
 #Ratio of SAR for HH with and without kids 
 SAR1.samples <- 1 - posterior_samples.covar.all[,Q1.index]

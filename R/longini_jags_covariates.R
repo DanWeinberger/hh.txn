@@ -29,10 +29,13 @@ model{
   }
   }
   
-  alpha1 ~ dnorm(0, 1e-4)
-  alpha2 ~ dnorm(0, 1e-4)
-  beta1 ~ dnorm(0, 1e-4)
-  delta1 ~ dnorm(0, 1e-4)
+  #Note prior here is a bit tighter than usual to prevent extreme values
+  alpha1 ~ dnorm(0, 1/4)
+  alpha2 ~ dnorm(0, 1/4)
+  
+  #Prior on alpha and beta
+  beta1 ~ dnorm(0, 1/4) #(inv.var-0.04 == sd=5; middle%ci roughly ranges from -3.3,-3.3; which is on scale of ratio is [0.04, 27]
+  delta1 ~ dnorm(0, 1/4)
 
 }
 "

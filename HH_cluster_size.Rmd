@@ -221,8 +221,7 @@ model_jags_covar<-jags.model(model_spec,
                                  'ds'=ds.vax.array,
                                  'max.hh.size'=dim(ds.vax.array)[2],
                                  'n.hh'= apply(ds.vax.array,c(2,3),sum),
-                                 'choose_kj_mat'=choose_kj_mat,
-                                  'max.contacts' = 1:dim(ds.vax.array)[2]
+                                 'choose_kj_mat'=choose_kj_mat
                                  ),
                        n.adapt=10000, 
                        n.chains=3)
@@ -271,6 +270,13 @@ CPI2.samples <- 1 - posterior_samples.covar.all[,B2.index]
 CPI.ratio.samples <- log(CPI1.samples / CPI2.samples)
 CPI.ratio.hdi <-  exp(c(median(CPI.ratio.samples), t(hdi(CPI.ratio.samples, credMass = 0.95))))
 CPI.ratio.hdi
+
+#Ratio of SAR for HH with and without kids 
+SAR1.samples <- 1 - posterior_samples.covar.all[,Q1.index]
+SAR2.samples <- 1 - posterior_samples.covar.all[,Q2.index] 
+SAR.ratio.samples <- log(SAR1.samples / SAR2.samples)
+SAR.ratio.hdi <-  exp(c(median(SAR.ratio.samples), t(hdi(SAR.ratio.samples, credMass = 0.95))))
+SAR.ratio.hdi
 
 ```
 

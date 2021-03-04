@@ -68,8 +68,7 @@ model_jags<-jags.model(model_spec,
 ```
 
 ```{r}
-params<-c('alpha',
-          'v')
+params<-c('alpha')
 
 ##############################################
 #Posterior Sampling

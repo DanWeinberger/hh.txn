@@ -13,10 +13,10 @@ model{
   Q <- exp(logit_Q)/(1+ exp(logit_Q))
 
   
-  #m[1,1] = B   # Probability of 0 of 1 HH member infected 
-  #m[2,1] = 1-B # Probability of 1 of 1 HH member infected 
-  
-  for (k in 1:max.hh.size){
+  m[1,1] = B   # Probability of 0 of 1 HH member infected
+  m[2,1] = 1-B # Probability of 1 of 1 HH member infected
+
+  for (k in 2:max.hh.size){
     m[1,k] = B^k # Probability everyone in HH escapes infection from the community 
     
     for (j in 1:(k-1)){

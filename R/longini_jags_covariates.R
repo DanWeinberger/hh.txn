@@ -16,9 +16,11 @@ model{
   
   P1[v] <- exp(logit_P1[v])/(1+ exp(logit_P1[v]))
   P2[v] <- exp(logit_P2[v])/(1+ exp(logit_P2[v]))
-
-
-  for (k in 1:max.hh.size){
+  
+  m[1,1,v] = B[v]   # Probability of 0 of 1 HH member infected 
+  m[2,1,v] = 1-B[v] # Probability of 1 of 1 HH member infected 
+    
+  for (k in 2:max.hh.size){
     m[1,k,v] = B[v]^k # Probability everyone in HH escapes infection from the community 
     
     for (j in 1:(k-1)){

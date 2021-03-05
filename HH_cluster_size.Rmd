@@ -227,6 +227,7 @@ model_jags_covar<-jags.model(model_spec,
                        n.chains=3)
 
 ```
+
 ```{r}
 params<-c('B','Q', 'beta1','delta1','alpha1','alpha2')
 
@@ -274,19 +275,135 @@ CPI.ratio.samples <- CPI1.samples / CPI2.samples
 quantile(CPI.ratio.samples, probs=c(0.025,0.5,0.975))
 #exp(quantile(CPI.log.ratio.samples, probs=c(0.025,0.5,0.975)) )
 
-#CPI.ratio.hdi_log_exp <-  exp(c(median(CPI.log.ratio.samples), t(hdi(CPI.log.ratio.samples, credMass = 0.95))))
-
 CPI.ratio.hdi <-  c(median(CPI.ratio.samples), t(hdi(CPI.ratio.samples, credMass = 0.95)))
 
-CPI.ratio.hdi ##This is the one suggested by Josh
+CPI.ratio.hdi 
+1 - mean(CPI.ratio.samples>1) #1 - Probability RR>1
 #CPI.ratio.hdi_log_exp
 
 #Ratio of SAR for HH with and without kids 
 SAR1.samples <- 1 - posterior_samples.covar.all[,Q1.index]
 SAR2.samples <- 1 - posterior_samples.covar.all[,Q2.index] 
-SAR.ratio.samples <- log(SAR1.samples / SAR2.samples)
-SAR.ratio.hdi <-  exp(c(median(SAR.ratio.samples), t(hdi(SAR.ratio.samples, credMass = 0.95))))
+SAR.ratio.samples <- (SAR1.samples / SAR2.samples)
+SAR.ratio.hdi <-  (c(median(SAR.ratio.samples), t(hdi(SAR.ratio.samples, credMass = 0.95))))
 SAR.ratio.hdi
+mean(SAR.ratio.samples<1)
+
+```
+
+## Simulate data from model with specified vaccine effect
+
+```{r}
+source('./R/longini_sim.R')
+
+#sET THE VACCINE EFFECTS
+set.RR.community <- 0.6
+set.RR.sar <- 0.3
+
+beta1 <- log(set.RR.community)
+delta1 <- log(set.RR.sar)
+
+baseline.community.prob <- 0.15 
+baseline.HH.prob <- 0.15
+set.max.hh.size <- 8
+
+simN <- longiniSim.m( 
+                     max.hh.size=set.max.hh.size, 
+                     N.households=500,
+                     baseline.community.prob = 0.15 ,
+                     baseline.HH.prob = 0.15,
+                     RR.community=set.RR.community,
+                     RR.sar=set.RR.sar,
+                     sizes=rep(50, set.max.hh.size)
+                     )
+
+```
+
+
+```{r}
+##############################################
+#Model Organization
+##############################################
+
+choose_kj_mat <- matrix(0, nrow=dim(simN)[2], ncol=dim(simN)[2])
+for(k in 2: dim(simN)[2]){
+  for(j in 1:k){
+    choose_kj_mat[k,j] <- choose(k,j)
+  }
+}
+
+
+model_spec<-textConnection(longini_jags_covar)
+model_jags_covar<-jags.model(model_spec, 
+                       inits=list(inits1,inits2, inits3),
+                       data=list( 
+                                 'ds'=simN,
+                                 'max.hh.size'=dim(simN)[2],
+                                 'n.hh'= apply(simN,c(2,3),sum),
+                                 'choose_kj_mat'=choose_kj_mat
+                                 ),
+                       n.adapt=10000, 
+                       n.chains=3)
+```
+
+```{r}
+params<-c('B','Q', 'beta1','delta1','alpha1','alpha2')
+
+##############################################
+#Posterior Sampling
+##############################################
+posterior_samples_covar<-coda.samples(model_jags_covar, 
+                                params, 
+                                n.iter=10000)
+posterior_samples.covar.all<-do.call(rbind,posterior_samples_covar)
+
+post_median<-apply(posterior_samples.covar.all, 2, median)
+sample.labs<-names(post_median)
+ci<-t(hdi(posterior_samples.covar.all, credMass = 0.95))
+ci <- cbind(post_median,ci)
+row.names(ci)<-sample.labs
+names(post_median)<-sample.labs
+
+B1.index <- grep('B[1]',sample.labs, fixed=T)
+B2.index <- grep('B[2]',sample.labs, fixed=T)
+
+Q1.index <- grep('Q[1]',sample.labs, fixed=T)
+Q2.index <- grep('Q[2]',sample.labs, fixed=T)
+
+beta1.index <- grep('beta1', sample.labs, fixed=T)
+
+CPI1.mcmc <- 1- ci[B1.index,]
+CPI2.mcmc <- 1- ci[B2.index,]
+
+SAR1.mcmc <- 1-ci[Q1.index,]
+SAR2.mcmc <- 1-ci[Q2.index,]
+
+beta1.mcmc <- 1-ci[beta1.index,]
+
+CPI.mcmc
+SAR.mcmc
+
+#Ratio of CPI for HH with and without kids 
+CPI1.samples <- 1 - posterior_samples.covar.all[,B1.index]
+CPI2.samples <- 1 - posterior_samples.covar.all[,B2.index]
+
+CPI.ratio.samples <- CPI2.samples / CPI1.samples
+
+##Equal tailed interval ives same result if use log or original scale
+quantile(CPI.ratio.samples, probs=c(0.025,0.5,0.975))
+
+CPI.ratio.hdi <-  c(median(CPI.ratio.samples), t(hdi(CPI.ratio.samples, credMass = 0.95)))
+
+CPI.ratio.hdi 
+1 - mean(CPI.ratio.samples<1) # 1 - Probability RR><1
+
+#Ratio of SAR for HH with and without vaccine 
+SAR1.samples <- 1 - posterior_samples.covar.all[,Q1.index]
+SAR2.samples <- 1 - posterior_samples.covar.all[,Q2.index] 
+SAR.ratio.samples <- SAR2.samples / SAR1.samples
+SAR.ratio.hdi <-  c(median(SAR.ratio.samples), t(hdi(SAR.ratio.samples, credMass = 0.95)))
+SAR.ratio.hdi
+mean(SAR.ratio.samples<1)
 
 ```
 

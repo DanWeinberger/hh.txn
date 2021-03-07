@@ -7,10 +7,14 @@ obs[81]
 ```{r}
 library(rjags)
 library(HDInterval)
-#source('./generate_data_Ginnycode.R')
-source('./generate_data_Ginnycode.R') #Just 240 people
+source('./generate_data_Ginnycode.R') 
 ds <- readRDS('../data/data.list.rds')
-data.sim <- gen_sim_data(popN=240)
+data.sim <- gen_sim_data(popN=2400, IRR.vax=1)
+data.sim.vax <- gen_sim_data(popN=2400, IRR.vax=0.2)
+
+prop.inf.vax <- 1-sum(data.sim.vax$nY)/2400
+prop.inf.unvax <- 1-sum(data.sim$nY)/2400
+prop.inf.vax/prop.inf.unvax
 
 T <- data.sim$T  #These dimensions not right!
 T <- array(T,dim=c(nrow(T),ncol(T),1))

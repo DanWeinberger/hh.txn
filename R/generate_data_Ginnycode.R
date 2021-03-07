@@ -1,9 +1,9 @@
 #################################
-gen_sim_data <- function(popN=2400){
+gen_sim_data <- function(popN=2400,IRR.vax=1){
 
 set.seed(123)
-nprob=array(c(0.01, 0.01,0.02,0.02,0.04,0.04,0.01,0.01),dim=c(1,8)) #probability of transmission from "normal" index case on day 1-8 of illness
-hprob=0.06*array(1, dim=c(1,8)) #probability of transmission from "highly infectious" index case on day 1-8
+nprob=IRR.vax*array(c(0.01, 0.01,0.02,0.02,0.04,0.04,0.01,0.01),dim=c(1,8)) #probability of transmission from "normal" index case on day 1-8 of illness
+hprob=IRR.vax*0.06*array(1, dim=c(1,8)) #probability of transmission from "highly infectious" index case on day 1-8
 popsize=popN #number of contacts exposed
 truth=nprob*2/3+hprob/3 #"true" probability of transmission (population avg)
 

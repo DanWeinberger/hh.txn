@@ -8,9 +8,9 @@ obs[81]
 library(rjags)
 library(HDInterval)
 #source('./generate_data_Ginnycode.R')
-source('./generate_data_Ginnycode_SHORT.R') #Just 240 people
+source('./generate_data_Ginnycode.R') #Just 240 people
 ds <- readRDS('../data/data.list.rds')
-data.sim <- gen_sim_data()
+data.sim <- gen_sim_data(popN=240)
 
 T <- data.sim$T  #These dimensions not right!
 T <- array(T,dim=c(nrow(T),ncol(T),1))

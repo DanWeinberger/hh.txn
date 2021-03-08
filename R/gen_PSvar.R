@@ -1,11 +1,6 @@
 gen_PSvar <- function(Cstrata,Istrata,Ena)
   {
   
-  Ena <- read.csv("data/SARSfakedata.csv")
-  Istrata <- as.matrix(Ena[,'X.index.sex.'],dim=c(length(Ena[,1]),1))
- #Cstrata <- Ena[,c('X.contact.ID.','X.contact.inf.status.','X.contact.sex.')]
-  Cstrata <- Ena[,c('X.contact.ID.','X.contact.age.','X.contact.sex.')]
-  
   x <- array(1, dim=c(length(Ena[,1]),1))
   
   for (i in 2:length(x)){
@@ -55,3 +50,18 @@ gen_PSvar <- function(Cstrata,Istrata,Ena)
   return(T)
   
 }
+
+
+
+### Small test for gen_PS function: 
+
+Ena <- read.csv("data/SARSfakedata.csv")
+Istrata <- as.matrix(Ena[,'X.index.sex.'],dim=c(length(Ena[,1]),1))
+#Cstrata <- Ena[,c('X.contact.ID.','X.contact.inf.status.','X.contact.sex.')]
+Cstrata <- Ena[,c('X.contact.ID.','X.contact.age.','X.contact.sex.')] ## ask Ginny
+
+T <- gen_PSvar(Cstrata,Istrata,Ena)
+
+
+
+

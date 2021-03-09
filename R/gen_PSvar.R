@@ -38,7 +38,7 @@ gen_PSvar <- function(Cstrata,Istrata,Ena)
       for (k in 1:kmax){
         for (t in 2:maxinc){
           if (R[i,3,k]>=(maxinc-t) || R[i,3,k]<0){ #start tracking exposure at maxinc - serial interval (or t=2 for uninfected)
-            T[i,t,k]=R[i,1,k] #index case strata (1=female, 2=male)
+            T[i,t,k]= T[i,t-1,k]+1#R[i,2,k] #R[i,1,k] #index case strata (1=female, 2=male)
           }
           if (t==(maxinc-R[i,3,k]+R[i,2,k]) || (R[i,3,k]<0 && t==2+R[i,2,k])){ #stop tracking exposure when t = maxinc - s.i. + dur
             break                                                        #  or t=2+dur for uninfected

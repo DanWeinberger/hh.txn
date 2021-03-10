@@ -1,0 +1,68 @@
+set.seed(1234)
+library(reshape2)
+###Simulate  people
+gen.hh <- function(idN, prob.hh.txn=0.5){
+  HH.size <- min(2+ rpois(n=1,1.5),5) #cap at 5
+  df1 <- as.data.frame(matrix(NA, nrow=HH.size, ncol=2))
+  names(df1) <- c('ID', 'hhID')
+  df1$hhID <- idN
+  df1$ID <- 1:HH.size
+  first.date <- '2020-04-01'
+  df1$date.test <- as.Date(NA)
+  df1$date.test[1] <- as.Date('2021-01-01')
+  df1$date.test[2:nrow(df1)] <- df1$date.test[1] + 1 + 21*runif(n=(nrow(df1)-1)) 
+  
+  df1$infected <- NA
+  df1$infected[1] <- 1
+  df1$infected[2:nrow(df1)] <- rbinom(n=(nrow(df1)-1),size=1, p=prob.hh.txn)
+  
+  return(df1)
+}
+
+#Generate the data and store as a data frame
+hh_list <- lapply(1:1200,gen.hh )
+hh_df <- do.call('rbind.data.frame', hh_list)
+
+
+#Count time since first test
+##Split by HH to do this
+#first case has day index set to 21 to allow for infection/latent period to happen earlier Tt1-20)
+hh_df.spl <- split(hh_df, hh_df$hhID)
+hh_df.spl <- lapply(hh_df.spl, function(x){
+  x$day_index <- 21 + round(as.numeric(x$date.test - min(x$date.test)))
+  x$day_index[x$infected==0] <- 42
+  return(x)
+})
+hh_df <- do.call('rbind.data.frame', hh_df.spl)
+
+##TO ADD TO THIS: Day when hospitalized relative to date of test--then they no longer contribute
+
+
+ hh_df.m <- melt(hh_df[,c('day_index','hhID','ID','infected')], id.vars=c('hhID','ID'))
+ hh_df.c <- acast(hh_df.m, hhID~ ID ~variable )
+ 
+ day.matrix <- hh_df.c[,,'day_index']
+ infected_matrix <- hh_df.c[,,'infected']
+ N.hh.members <- apply(infected_matrix,1,function(x) sum(!is.na(x)))
+ N.HH <- nrow(infected_matrix)
+ #Then in JAGS, we will loop through 
+ 
+ #distribution for 
+ 
+ for(i in 1:N.HH){
+   for(j in 1:N.hh.members[i]){
+     for(t in 1:42){
+     
+     day.infectious[i,j] <- day.matrix[i,j] - rgamma(1, shape=0.75, scale=3) #infectious prior to test
+     day.exposed[i,j] <- day.infectious[i,j] - rgamma(1, shape=0.75, scale=3) #latent period
+     
+     day.infectious.end[i,j] <- day.infectious + rgamma(1, shape=0.75, scale=7) #how long infectious after 
+     
+     I[i,j] <- (t >= day.infectious[i,j] & t<day.infectious.end[i,j] & infected_matrix[i,j]==1)
+     E[i,j] <- (t >= day.exposed[i,j] & t<day.infectious[i,j] & infected_matrix[i,j]==1)
+     S[i,j] <- (infected_matrix[i,j]==0 | (infected_matrix[i,j]==1 & t<=day.exposed[i,j]) )
+    }
+   }
+ }
+ 
+ 

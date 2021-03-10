@@ -48,21 +48,25 @@ hh_df <- do.call('rbind.data.frame', hh_df.spl)
  #Then in JAGS, we will loop through 
  
  #distribution for 
- 
+ for(t in 1:42){ #how can we do this without looping over all t?
+   
  for(i in 1:N.HH){
    for(j in 1:N.hh.members[i]){
-     for(t in 1:42){
-     
+
      day.infectious[i,j] <- day.matrix[i,j] - rgamma(1, shape=0.75, scale=3) #infectious prior to test
      day.exposed[i,j] <- day.infectious[i,j] - rgamma(1, shape=0.75, scale=3) #latent period
      
      day.infectious.end[i,j] <- day.infectious + rgamma(1, shape=0.75, scale=7) #how long infectious after 
      
-     I[i,j] <- (t >= day.infectious[i,j] & t<day.infectious.end[i,j] & infected_matrix[i,j]==1)
-     E[i,j] <- (t >= day.exposed[i,j] & t<day.infectious[i,j] & infected_matrix[i,j]==1)
-     S[i,j] <- (infected_matrix[i,j]==0 | (infected_matrix[i,j]==1 & t<=day.exposed[i,j]) )
-    }
-   }
+     I[i,j,t] <- (t >= day.infectious[i,j] & t<day.infectious.end[i,j] & infected_matrix[i,j]==1)
+     E[i,j,t] <- (t >= day.exposed[i,j] & t<day.infectious[i,j] & infected_matrix[i,j]==1)
+     S[i,j,t] <- (infected_matrix[i,j]==0 | (infected_matrix[i,j]==1 & t<=day.exposed[i,j]) )
+     }
+     I_sum[i,t] <- sum(I[i,,t])
+     E_sum[i,t] <- sum(E[i,,t])
+     S_sum[i,t] <- sum(S[i,,t])
+     
+  }
  }
  
  

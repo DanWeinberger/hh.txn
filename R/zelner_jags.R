@@ -9,7 +9,7 @@ model{
   }
   #logit_p ~ dnorm(0,1e-4)
   beta ~ dnorm(0,1e-4)
-  p <- exp(logit_p)/(1+exp(logit_p))
+  #p <- exp(logit_p)/(1+exp(logit_p))
 
 
   for (j in 1:hh){ # j represents each household
@@ -36,5 +36,10 @@ model{
       }
     #}
   #}
+  for(t in 1:tmax){
+    for(j in 1:hh){
+    p[t,j] <- exp(logit_p[t,j])/(exp(logit_p[t,j]) + 1)  #Inverse logit
+    }
+  }
 }
 "

@@ -17,7 +17,7 @@ library(R.matlab)
 ```{r}
 # Read a .mat file
 library(R.matlab)
-mydata <- readMat(con="data/EMD538_2020_Lab7.mat")
+mydata <- readMat(con="../data/EMD538_2020_Lab7.mat")
 names(mydata) # tinfect, hh.incidence, hh.size, S, I, E, R
 attach(mydata)
 ```
@@ -49,6 +49,12 @@ S[c(24:48),c(7,11)]
 E[c(24:48),c(7,11)]
 I[c(24:48),c(7,11)]
 R[c(24:48),c(7,11)]
+
+tmax = dim(S)[1]
+S0 = S[1,] # Initial number of susceptibles in each household
+Sf = S[tmax,] # Final number of susceptibles in each household
+ninfect = S0 - Sf # number infected in each household 
+
 ```
 
 ```{r}
@@ -60,13 +66,69 @@ R[c(24:48),c(7,11)]
 # First, load a function hhsirLL()
 # This function uses Zelner's equation to calculate likelihood (Slide 16-17)
 # setwd("~/Desktop/EMD538/Lab/Lab7") # <--- Change it to your folder
-source(file="R/EMD538_2020_Lab7_hhsirLL.R")
+source(file="EMD538_2020_Lab7_hhsirLL.R")
 
 # Estimate beta (= the rate of transmission per day) by minimizing the neg log-
 # likelihood
 betaHHest <- optimize(f=hhsirLL,S=S,I=I,tinfect=tinfect, interval=c(0,10))$minimum
 betaHHest
 ```
+
+```{r}
+source('zelner_jags.R')
+```
+
+```{r}
+##############################################################
+#Model Fitting
+##############################################################
+inits1=list(".RNG.seed"=c(123), ".RNG.name"='base::Wichmann-Hill')
+inits2=list(".RNG.seed"=c(456), ".RNG.name"='base::Wichmann-Hill')
+inits3=list(".RNG.seed"=c(789), ".RNG.name"='base::Wichmann-Hill')
+
+
+##############################################
+#Model Organization
+##############################################
+model_spec<-textConnection(zelner_jags)
+model_jags<-jags.model(model_spec, 
+                       inits=list(inits1,inits2, inits3),
+                       data=list('I'=I,
+                                 'S'=S,
+                                 'Sf'=Sf,
+                                 'ninfect'=ninfect,
+                                 'hh'=dim(S)[2],
+                                 'hh.size'= hh.size,
+                                 'tmax'= dim(S)[1],
+                                 'tinfect'=tinfect,
+                                 'dt'=1/24
+                                 ),
+                       n.adapt=10000, 
+                       n.chains=3)
+
+```
+
+
+```{r}
+detach(mydata)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -4,7 +4,7 @@ model{
 for(i in 1:N.HH){
 
    for(t in 1:tmax[i]){
-      log_prob_no_inf_t[i,t] <- -1 * S_sum[i,t]*(beta * I_sum[i,t] + alpha)
+      log_prob_no_inf_t[i,t] <- -1 * S[i,t]*(beta * I[i,t] + alpha)
    }
     
      for(j in 1:N.hh.members[i]){
@@ -12,7 +12,7 @@ for(i in 1:N.HH){
      
      ##NOTE THESE ARE PROBABLY NOT RIGHT--PROB NEED TO FLIP SOME OF THEM AROUND
       prob_no_inf[i,j] <- exp(sum(log_prob_no_inf_t[i,1:day.matrix[i,j]])) #P no infections over all time intervals
-      prob_inf[i,j] <- infected_matrix[i,j] * S_sum[i,day.matrix[i,j]]*(beta * I_sum[i,day.matrix[i,j]] + alpha) #for infected people only
+      prob_inf[i,j] <- infected_matrix[i,j] * S[i,day.matrix[i,j]]*(beta * I[i,day.matrix[i,j]] + alpha) #for infected people only
 
       total_prob[i,j] <- (1 - prob_no_inf[i,j]) * prob_inf[i,j] #Probability of infection for the individual 
     }
@@ -35,12 +35,16 @@ for(i in 1:N.HH){
     R[i,1] <- 0
     NewI[i,1] <- 0
     CumNewI[i,1] <- 0
+    dS[i,1] <-0
+    dE[i,1] <-0
+    dI[i,1] <-0
+    dR[i,1] <-0
 
-    for(t in 2:42){
+    for(t in 2:43){
       dS[i,t] <- -S[i,(t-1)]*(beta * I[i,(t-1)] + alpha)
       dE[i,t] <- S[i,(t-1)]*(beta * I[i,(t-1)] + alpha) - E[i, (t-1)]*delta[i]
       dI[i,t] <- S[i,(t-1)]*(beta * I[i,(t-1)] + alpha) - I[i,(t-1)] * epsilon[i]
-      dR[i,t] <- I[i,(t-1)] * epsilon
+      dR[i,t] <- I[i,(t-1)] * epsilon[i]
       
       S[i,t] <- dS[i,t] + S[i,(t-1)]
       E[i,t] <- dE[i,t] + E[i,(t-1)]

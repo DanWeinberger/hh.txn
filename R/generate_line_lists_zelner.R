@@ -20,7 +20,7 @@ gen.hh <- function(idN, prob.hh.txn=0.5){
 }
 
 #Generate the data and store as a data frame
-hh_list <- lapply(1:1200,gen.hh )
+hh_list <- lapply(1:100,gen.hh )
 hh_df <- do.call('rbind.data.frame', hh_list)
 
 

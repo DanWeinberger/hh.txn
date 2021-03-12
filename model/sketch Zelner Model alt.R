@@ -4,18 +4,17 @@ model{
 for(i in 1:N.HH){
 
    for(t in 1:tmax[i]){
-      log_prob_no_inf_t[i,t] <- -1* S_sum[i,t]*(beta * I_sum[i,t] + alpha)
-    }
+      log_prob_no_inf_t[i,t] <- -1 * S_sum[i,t]*(beta * I_sum[i,t] + alpha)
+   }
     
-    for(j in 1:N.hh.members[i]){
-       prob_inf[i,j] <- infected_matrix[i,j] * S[i,day.matrix[i,j]]*(beta * I_sum[i,day.matrix[i,j]] + alpha) #for infected people only
+     for(j in 1:N.hh.members[i]){
       y[i,j] ~ dbern(total_prob[i,j]) #y=infected matrix
      
      ##NOTE THESE ARE PROBABLY NOT RIGHT--PROB NEED TO FLIP SOME OF THEM AROUND
-      prob_no_inf[i,j] <- exp(sum(log_prob_no_inf_t[i,1:tmax[i]])) #P no infections over all time intervals
+      prob_no_inf[i,j] <- exp(sum(log_prob_no_inf_t[i,1:day.matrix[i,j]])) #P no infections over all time intervals
       prob_inf[i,j] <- infected_matrix[i,j] * S_sum[i,day.matrix[i,j]]*(beta * I_sum[i,day.matrix[i,j]] + alpha) #for infected people only
       
-      total_prob[i,j] <- prob_no_inf[i,j] * prob_inf[i,j]
+      total_prob[i,j] <- (1 - prob_no_inf[i,j]) * prob_inf[i,j]
     }
     
 
@@ -70,8 +69,6 @@ ra3 <- ( m3 + sqrt( m3^2 + 4*sd3^2 ) ) / ( 2 * sd3^2 )
 sh3 <- 1 + m3 * ra3
 m3 ~ dunif(2,6) #days
 sd3 ~ dunif(2,3) #SD on days
-
-
 
 
 alpha ~ dnorm(0,1e-4)

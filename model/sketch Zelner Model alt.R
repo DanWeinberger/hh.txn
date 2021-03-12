@@ -13,7 +13,7 @@ for(i in 1:N.HH){
      ##NOTE THESE ARE PROBABLY NOT RIGHT--PROB NEED TO FLIP SOME OF THEM AROUND
       prob_no_inf[i,j] <- exp(sum(log_prob_no_inf_t[i,1:day.matrix[i,j]])) #P no infections over all time intervals
       prob_inf[i,j] <- infected_matrix[i,j] * S_sum[i,day.matrix[i,j]]*(beta * I_sum[i,day.matrix[i,j]] + alpha) #for infected people only
-      
+
       total_prob[i,j] <- (1 - prob_no_inf[i,j]) * prob_inf[i,j]
     }
     
@@ -22,7 +22,7 @@ for(i in 1:N.HH){
 
 ##### Attaching latent piece
 
-for(i in 1:N.hh){
+for(i in 1:N.HH){
     Dur.Inf[i] ~ dgamma(sh1, ra1) #duration infectiusness
     Dur.Latent[i] ~dgamma(sh2, ra2) #Duration latent
 

@@ -45,77 +45,79 @@ day.matrix <- hh_df.c[,,'day_index']
 infected_matrix <- hh_df.c[,,'infected']
 N.hh.members <- apply(infected_matrix,1,function(x) sum(!is.na(x)))
 N.HH <- nrow(infected_matrix)
-#Then in JAGS, we will loop through 
+
+N.cases.hh <- apply(infected_matrix,1,sum, na.rm=T)
 
 
 
-
-#####################
-#distribution for 
-for(t in 1:42){ #how can we do this without looping over all t?
-  
-  for(i in 1:N.HH){
-    for(j in 1:N.hh.members[i]){
-      
-      day.infectious[i,j] <- day.matrix[i,j] - rgamma(1, shape=0.75, scale=3) #infectious prior to test
-      day.exposed[i,j] <- day.infectious[i,j] - rgamma(1, shape=0.75, scale=3) #latent period
-      day.infectious.end[i,j] <- day.infectious[i,j] + rgamma(1, shape=0.75, scale=7) #how long infectious after 
-      
-      
-      I[i,j,t] <- (t >= day.infectious[i,j] & t<day.infectious.end[i,j] & infected_matrix[i,j]==1)
-      E[i,j,t] <- (t >= day.exposed[i,j] & t<day.infectious[i,j] & infected_matrix[i,j]==1)
-      S[i,j,t] <- (infected_matrix[i,j]==0 | (infected_matrix[i,j]==1 & t<=day.exposed[i,j]) )
-    }
-    I_sum[i,t] <- sum(I[i,,t])
-    E_sum[i,t] <- sum(E[i,,t])
-    S_sum[i,t] <- sum(S[i,,t])
-    
-  }
-}
-
-
-#JAGS code
-model{
-  for(i in 1:N.HH){
-    for(j in 1:N.hh.members[i]){
-      
-      day.infectious[i,j] <- day.matrix[i,j] - infect.dist[i,j] #infectious prior to test
-      day.exposed[i,j] <- day.infectious[i,j] - expose.dist[i,j] #latent period
-      day.infectious.end[i,j] <- day.infectious[i,j] + end.inf[i,j] #how long infectious after 
-      
-      infect.dist[i,j] ~ dgamma(sh1, ra1)
-      expose.dist[i,j] ~dgamma(sh2, ra2)
-      end.inf[i,j] ~dgamma(sh3,ra3)
-      
-for(t in 1:42){ #how can we do this without looping over all t?
-        
-      I[i,j,t] <- (t >= day.infectious[i,j] & t<day.infectious.end[i,j] & infected_matrix[i,j]==1)
-      E[i,j,t] <- (t >= day.exposed[i,j] & t<day.infectious[i,j] & infected_matrix[i,j]==1)
-      S[i,j,t] <- (infected_matrix[i,j]==0 | (infected_matrix[i,j]==1 & t<=day.exposed[i,j]) )
-}
-    }
-for(t in 1:42){ #how can we do this without looping over all t?
-  I_sum[i,t] <- sum(I[i,,t])
-  E_sum[i,t] <- sum(E[i,,t])
-  S_sum[i,t] <- sum(S[i,,t])
-}
-  }
-
-   # Hyperpriors for the latent distributions
-    # parameterized by mode (m) and standard deviation (sd):
-    sh1 <- 1 + m1 * ra1
-    ra1 <- ( m1 + sqrt( m1^2 + 4*sd1^2 ) ) / ( 2 * sd1^2 )
-    m1 ~ dunif(2,6)
-    sd1 ~ dunif(2,3) 
-    
-    sh2 <- 1 + m2 * ra2
-    ra2 <- ( m2 + sqrt( m2^2 + 4*sd2^2 ) ) / ( 2 * sd2^2 )
-    m2 ~ dunif(2,6)
-    sd2 ~ dunif(2,3) 
-    
-    ra3 <- ( m3 + sqrt( m3^2 + 4*sd3^2 ) ) / ( 2 * sd3^2 )
-    sh3 <- 1 + m3 * ra3
-    m3 ~ dunif(2,6) #days
-    sd3 ~ dunif(2,3) #SD on days
-    
-}    
+# 
+# 
+# #####################
+# #distribution for 
+# for(t in 1:42){ #how can we do this without looping over all t?
+#   
+#   for(i in 1:N.HH){
+#     for(j in 1:N.hh.members[i]){
+#       
+#       day.infectious[i,j] <- day.matrix[i,j] - rgamma(1, shape=0.75, scale=3) #infectious prior to test
+#       day.exposed[i,j] <- day.infectious[i,j] - rgamma(1, shape=0.75, scale=3) #latent period
+#       day.infectious.end[i,j] <- day.infectious[i,j] + rgamma(1, shape=0.75, scale=7) #how long infectious after 
+#       
+#       
+#       I[i,j,t] <- (t >= day.infectious[i,j] & t<day.infectious.end[i,j] & infected_matrix[i,j]==1)
+#       E[i,j,t] <- (t >= day.exposed[i,j] & t<day.infectious[i,j] & infected_matrix[i,j]==1)
+#       S[i,j,t] <- (infected_matrix[i,j]==0 | (infected_matrix[i,j]==1 & t<=day.exposed[i,j]) )
+#     }
+#     I_sum[i,t] <- sum(I[i,,t])
+#     E_sum[i,t] <- sum(E[i,,t])
+#     S_sum[i,t] <- sum(S[i,,t])
+#     
+#   }
+# }
+# 
+# 
+# #JAGS code
+# model{
+#   for(i in 1:N.HH){
+#     for(j in 1:N.hh.members[i]){
+#       
+#       day.infectious[i,j] <- day.matrix[i,j] - infect.dist[i,j] #infectious prior to test
+#       day.exposed[i,j] <- day.infectious[i,j] - expose.dist[i,j] #latent period
+#       day.infectious.end[i,j] <- day.infectious[i,j] + end.inf[i,j] #how long infectious after 
+#       
+#       infect.dist[i,j] ~ dgamma(sh1, ra1)
+#       expose.dist[i,j] ~dgamma(sh2, ra2)
+#       end.inf[i,j] ~dgamma(sh3,ra3)
+#       
+# for(t in 1:42){ #how can we do this without looping over all t?
+#         
+#       I[i,j,t] <- (t >= day.infectious[i,j] & t<day.infectious.end[i,j] & infected_matrix[i,j]==1)
+#       E[i,j,t] <- (t >= day.exposed[i,j] & t<day.infectious[i,j] & infected_matrix[i,j]==1)
+#       S[i,j,t] <- (infected_matrix[i,j]==0 | (infected_matrix[i,j]==1 & t<=day.exposed[i,j]) )
+# }
+#     }
+# for(t in 1:42){ #how can we do this without looping over all t?
+#   I_sum[i,t] <- sum(I[i,,t])
+#   E_sum[i,t] <- sum(E[i,,t])
+#   S_sum[i,t] <- sum(S[i,,t])
+# }
+#   }
+# 
+#    # Hyperpriors for the latent distributions
+#     # parameterized by mode (m) and standard deviation (sd):
+#     sh1 <- 1 + m1 * ra1
+#     ra1 <- ( m1 + sqrt( m1^2 + 4*sd1^2 ) ) / ( 2 * sd1^2 )
+#     m1 ~ dunif(2,6)
+#     sd1 ~ dunif(2,3) 
+#     
+#     sh2 <- 1 + m2 * ra2
+#     ra2 <- ( m2 + sqrt( m2^2 + 4*sd2^2 ) ) / ( 2 * sd2^2 )
+#     m2 ~ dunif(2,6)
+#     sd2 ~ dunif(2,3) 
+#     
+#     ra3 <- ( m3 + sqrt( m3^2 + 4*sd3^2 ) ) / ( 2 * sd3^2 )
+#     sh3 <- 1 + m3 * ra3
+#     m3 ~ dunif(2,6) #days
+#     sd3 ~ dunif(2,3) #SD on days
+#     
+# }    

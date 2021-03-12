@@ -101,6 +101,7 @@ for(t in 1:42){ #how can we do this without looping over all t?
 }
   }
 
+   # Hyperpriors for the latent distributions
     # parameterized by mode (m) and standard deviation (sd):
     sh1 <- 1 + m1 * ra1
     ra1 <- ( m1 + sqrt( m1^2 + 4*sd1^2 ) ) / ( 2 * sd1^2 )

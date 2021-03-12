@@ -14,7 +14,7 @@ source('./generate_line_lists_zelner.R')
 
 Read in model
 ```{r}
-source('../model/sketch Zelner Model.R')
+source('../model/sketch Zelner Model alt.R')
 ```
 
 ```{r}
@@ -37,7 +37,7 @@ model_jags<-jags.model(model_spec,
                                  'N.hh.members'=N.hh.members,
                                  'infected_matrix'=infected_matrix,
                                  'day.matrix'=day.matrix,
-                                  'y' = N.cases.hh,
+                                  'y' = infected_matrix,
                                  'tmax'=apply(day.matrix,1,max,na.rm=T)
                                  ),
                        n.adapt=10000, 

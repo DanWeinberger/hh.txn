@@ -3,17 +3,22 @@ zelner_jags2 <- "
 model{
 for(i in 1:N.HH){
 
-    y[i] ~ dbinom(expected.prop,(N.hh.members[i]-1)) #y=N infected in HH i
-    expected.prop[i] <- SecondaryI[i]/(N.hh.members[i]-1)
+   for(t in 1:tmax[i]){
+      log_prob_no_inf_t[i,t] <- -1* S_sum[i,t]*(beta * I_sum[i,t] + alpha)
+    }
     
     for(j in 1:N.hh.members[i]){
        prob_inf[i,j] <- infected_matrix[i,j] * S[i,day.matrix[i,j]]*(beta * I_sum[i,day.matrix[i,j]] + alpha) #for infected people only
+      y[i,j] ~ dbern(total_prob[i,j]) #y=infected matrix
+     
+     ##NOTE THESE ARE PROBABLY NOT RIGHT--PROB NEED TO FLIP SOME OF THEM AROUND
+      prob_no_inf[i,j] <- exp(sum(log_prob_no_inf_t[i,1:tmax[i]])) #P no infections over all time intervals
+      prob_inf[i,j] <- infected_matrix[i,j] * S_sum[i,day.matrix[i,j]]*(beta * I_sum[i,day.matrix[i,j]] + alpha) #for infected people only
+      
+      total_prob[i,j] <- prob_no_inf[i,j] * prob_inf[i,j]
     }
-    prob_no_inf[i] <- exp(sum(log_prob_no_inf_t[i,1:tmax[i]])) #P no infections over all time intervals
-    prob_inf.hh[i] <- exp(sum(log(prob_inf[i,])))
-    prob.hh[i] <- prob_inf.hh[i] * prob_no_inf[i] 
-
     
+
 }
 
 ##### Attaching latent piece

@@ -4,16 +4,16 @@ model{
 for(i in 1:N.HH){
 
    for(t in 1:tmax[i]){
-      log_prob_no_inf_t[i,t] <- -1* S_sum[i,t]*(beta * I_sum[i,t] + alpha)
+      log_prob_no_inf_t[i,t] <- -1* S[i,t]*(beta * I[i,t] + alpha)
     }
     
     for(j in 1:N.hh.members[i]){
-       prob_inf[i,j] <- infected_matrix[i,j] * S[i,day.matrix[i,j]]*(beta * I_sum[i,day.matrix[i,j]] + alpha) #for infected people only
+       prob_inf[i,j] <- infected_matrix[i,j] * S[i,day.matrix[i,j]]*(beta * I[i,day.matrix[i,j]] + alpha) #for infected people only
       y[i,j] ~ dbern(total_prob[i,j]) #y=infected matrix
      
      ##NOTE THESE ARE PROBABLY NOT RIGHT--PROB NEED TO FLIP SOME OF THEM AROUND
       prob_no_inf[i,j] <- exp(sum(log_prob_no_inf_t[i,1:tmax[i]])) #P no infections over all time intervals
-      prob_inf[i,j] <- infected_matrix[i,j] * S_sum[i,day.matrix[i,j]]*(beta * I_sum[i,day.matrix[i,j]] + alpha) #for infected people only
+      prob_inf[i,j] <- infected_matrix[i,j] * S[i,day.matrix[i,j]]*(beta * I[i,day.matrix[i,j]] + alpha) #for infected people only
       
       total_prob[i,j] <- prob_no_inf[i,j] * prob_inf[i,j]
     }
@@ -23,7 +23,7 @@ for(i in 1:N.HH){
 
 ##### Attaching latent piece
 
-for(i in 1:N.hh){
+for(i in 1:N.HH){
     Dur.Inf[i] ~ dgamma(sh1, ra1) #duration infectiusness
     Dur.Latent[i] ~dgamma(sh2, ra2) #Duration latent
 

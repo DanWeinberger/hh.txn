@@ -27,6 +27,9 @@ for(i in 1:N.hh){
     Dur.Inf[i] ~ dgamma(sh1, ra1) #duration infectiusness
     Dur.Latent[i] ~dgamma(sh2, ra2) #Duration latent
 
+    delta[i] <- 1/Dur.Inf[i]
+    epsilon[i] <- 1/Dur.Latent[i]
+    
     S[i,1] <- N.hh.members[i] - 1
     E[i,1] <- 0
     I[i,1] <- 1

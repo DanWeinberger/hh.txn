@@ -37,7 +37,7 @@ model_jags<-jags.model(model_spec,
                                  'N.hh.members'=N.hh.members,
                                  'infected_matrix'=infected_matrix,
                                  'day.matrix'=day.matrix,
-                                  'y' = infected_matrix,
+                                  'y' = (1-infected_matrix),
                                  'tmax'=apply(day.matrix,1,max,na.rm=T)
                                  ),
                        n.adapt=10000, 

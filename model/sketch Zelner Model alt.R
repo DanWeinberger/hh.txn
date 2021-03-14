@@ -30,6 +30,7 @@ for(i in 1:N.HH){
      for(j in 1:N.hh.members[i]){
 
  
+ #Check this hyperprior structure..will result in different values being drawn for each person inHH
      alpha[i,j] <- exp(log.alpha[i,j])
      beta[i,j]  <- exp(log.beta[i,j])
      log.alpha[i,j] ~ dnorm(mu1,tau1)
@@ -53,23 +54,21 @@ for(i in 1:N.HH){
     dI[i,j,1] <-0
     dR[i,j,1] <-0
 
-    for(t in 2:43){
-      dS[i,j,t] <- (-sum_S[i,j,(t-1)]*(beta[i,j] * sum_I[i,j,(t-1)] + alpha[i,j]) )/N.hh.members[i]
-      dE[i,j,t] <- (sum_S[i,j,(t-1)]*(beta[i,j] * sum_I[i,j,(t-1)] + alpha[i,j]) - sum_E[i, j,(t-1)]*delta[i,j])/N.hh.members[i]
-      dI[i,j,t] <- (sum_S[i,j,(t-1)]*(beta[i,j] * sum_I[i,(t-1)] + alpha[i,j]) - sum_I[i,(t-1)] * epsilon[i,j])/N.hh.members[i]
-      dR[i,j,t] <- (sum_I[i,j,(t-1)] * epsilon[i,j])/N.hh.members[i]
+    for(t in 2:(tmax[i]+1)){
+    #dS,dE,dI, dR are effectively a weighted average of individual effects
+      dS[i,j,t] <- (-sum_S[i,(t-1)]*(beta[i,j] * sum_I[i,(t-1)] + alpha[i,j]) )/N.hh.members[i]
+      dE[i,j,t] <- (sum_S[i,(t-1)]*(beta[i,j] * sum_I[i,(t-1)] + alpha[i,j]) - sum_E[i,(t-1)]*delta[i,j])/N.hh.members[i]
+      dI[i,j,t] <- (sum_S[i,(t-1)]*(beta[i,j] * sum_I[i,(t-1)] + alpha[i,j]) - sum_I[i,(t-1)] * epsilon[i,j])/N.hh.members[i]
+      dR[i,j,t] <- (sum_I[i,(t-1)] * epsilon[i,j])/N.hh.members[i]
       
       S[i,j,t] <- dS[i,j,t] + S[i,j,(t-1)]
       E[i,j,t] <- dE[i,j,t] + E[i,j,(t-1)]
       I[i,j,t] <- dI[i,j,t] + I[i,j,(t-1)]
       R[i,j,t] <- dR[i,j,t] + R[i,j,(t-1)]
-      NewI[i,j,t] <- S[i,j,(t-1)]*(beta[i,j] * I[i,j,(t-1)] + alpha[i,j])
-      CumNewI[i,j,t] <- NewI[i,j,(t-1)] + NewI[i,j,t]
     }
-    SecondaryI[i,,] <- sum(NewI[i,,])
      }
      
-   for(t in 1:43){
+   for(t in 1:tmax[i]){
      sum_S[i,t] <- sum(S[i,,t])
      sum_E[i,t] <- sum(E[i,,t])
      sum_I[i,t] <- sum(I[i,,t])

@@ -17,8 +17,8 @@ for(i in 1:N.HH){
       
       prob_inf[i,j] <- infected_matrix[i,j] * (beta * I[i,day.matrix[i,j]] + alpha) #for infected people only
 
-    q[i,j] <- (1 - prob_no_inf_inf_person[i,j]) * (1 - prob_inf[i,j]) * infected_matrix[i,j] + #prob for infection at time t and not before
-                    (1 - prob_no_inf_uninf[i,j]) * (1- infected_matrix[i,j] ) + 1e-6 #prob for uninfected peopel    
+    q[i,j] <- (prob_no_inf_inf_person[i,j]) * (1 - prob_inf[i,j]) * infected_matrix[i,j] + #prob for infection at time t and not before
+                    (prob_no_inf_uninf[i,j]) * (1- infected_matrix[i,j] ) + 1e-6 #prob for uninfected peopel    
 }
     
 

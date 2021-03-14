@@ -48,7 +48,7 @@ for(i in 1:N.HH){
     for(t in 2:43){
       dS[i,t] <- -S[i,(t-1)]*(beta * I[i,(t-1)] + alpha)
       dE[i,t] <- S[i,(t-1)]*(beta * I[i,(t-1)] + alpha) - E[i, (t-1)]*delta[i]
-      dI[i,t] <- S[i,(t-1)]*(beta * I[i,(t-1)] + alpha) - I[i,(t-1)] * epsilon[i]
+      dI[i,t] <- E[i, (t-1)]*delta[i] - I[i,(t-1)] * epsilon[i] 
       dR[i,t] <- I[i,(t-1)] * epsilon[i]
       
       S[i,t] <- dS[i,t] + S[i,(t-1)]

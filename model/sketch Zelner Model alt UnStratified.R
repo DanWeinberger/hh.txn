@@ -3,21 +3,19 @@ zelner_jags2 <- "
 model{
 for(i in 1:N.HH){
 
-
+   for(t in 1:tmax[i]){
+      log_prob_no_inf_t[i,t] <- log( 1 - (beta * I[i,t] + alpha) )
+   }
     
      for(j in 1:N.hh.members[i]){
-     
-        for(t in 1:tmax[i]){
-          log_prob_no_inf_t[i,j,t] <- log( 1 - (beta[i,j] * I[i,t] + alpha[i,j]) )
-        }
         y[i,j] ~ dbern(q[i,j]) #y=UNinfected matrix
      
      ##NOTE THESE ARE PROBABLY NOT RIGHT--PROB NEED TO FLIP SOME OF THEM AROUND
-      prob_no_inf_uninf[i,j] <- exp(sum(log_prob_no_inf_t[i,j,1:day.matrix[i,j]])) #P no infections over all time intervals
+      prob_no_inf_uninf[i,j] <- exp(sum(log_prob_no_inf_t[i,1:day.matrix[i,j]])) #P no infections over all time intervals
       
-      prob_no_inf_inf_person[i,j] <- exp(sum(log_prob_no_inf_t[i,j,1:((day.matrix[i,j] - 1)) ])) #P no infections prior to infection
+      prob_no_inf_inf_person[i,j] <- exp(sum(log_prob_no_inf_t[i,1:((day.matrix[i,j] - 1)) ])) #P no infections prior to infection
       
-      prob_inf[i,j] <- infected_matrix[i,j] * (beta[i,j] * I[i,day.matrix[i,j]] + alpha[i,j]) #for infected people only
+      prob_inf[i,j] <- infected_matrix[i,j] * (beta * I[i,day.matrix[i,j]] + alpha) #for infected people only
 
     q[i,j] <- (1 - prob_no_inf_inf_person[i,j]) * (1 - prob_inf[i,j]) * infected_matrix[i,j] + #prob for infection at time t and not before
                     (1 - prob_no_inf_uninf[i,j]) * (1- infected_matrix[i,j] ) + 1e-6 #prob for uninfected peopel    
@@ -62,22 +60,6 @@ for(i in 1:N.HH){
     SecondaryI[i] <- sum(NewI[i,])
 }
 
-for(i in 1:N.HH){
-     for(j in 1:N.hh.members[i]){
-     
-     alpha[i,j] <- exp(log.alpha[i,j])
-     beta[i,j]  <- exp(log.beta[i,j])
-     log.alpha[i,j] ~ dnorm(mu1,tau1)
-     log.beta[i,j] ~ dnorm(mu2,tau2)
-     
-     }
-  }
-
-mu1 ~dnorm(0,1e-4)
-mu2 ~dnorm(0,1e-4)
-
-tau1 ~dgamma(0.001, 0.001) #Check prior!
-tau2 ~dgamma(0.001, 0.001)
 
 # Hyperpriors for the latent distributions
 # parameterized by mode (m) and standard deviation (sd):
@@ -97,9 +79,9 @@ m3 ~ dunif(2,6) #days
 sd3 ~ dunif(2,3) #SD on days
 
 
-
+alpha ~ dnorm(0,1e-4)
+beta ~ dnorm(0,1e-4)
 
 }
 "
-
 

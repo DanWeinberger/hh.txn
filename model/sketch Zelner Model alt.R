@@ -3,10 +3,7 @@ zelner_jags2 <- "
 model{
 for(i in 1:N.HH){
 
-   for(t in 1:tmax[i]){
-      log_prob_no_inf_t[i,t] <- log( 1 - (beta * I[i,t] + alpha) )
-   }
-    
+
      for(j in 1:N.hh.members[i]){
         y[i,j] ~ dbern(q[i,j]) #y=UNinfected matrix
      
@@ -15,7 +12,7 @@ for(i in 1:N.HH){
       
       prob_no_inf_inf_person[i,j] <- exp(sum(log_prob_no_inf_t[i,1:((day.matrix[i,j] - 1)) ])) #P no infections prior to infection
       
-      prob_inf[i,j] <- infected_matrix[i,j] * (beta * I[i,day.matrix[i,j]] + alpha) #for infected people only
+      prob_inf[i,j] <- infected_matrix[i,j] * (beta[i,j] * I[i,day.matrix[i,j]] + alpha[i,j]) #for infected people only
 
     q[i,j] <- (1 - prob_no_inf_inf_person[i,j]) * (1 - prob_inf[i,j]) * infected_matrix[i,j] + #prob for infection at time t and not before
                     (1 - prob_no_inf_uninf[i,j]) * (1- infected_matrix[i,j] ) + 1e-6 #prob for uninfected peopel    
@@ -74,8 +71,8 @@ for(i in 1:N.HH){
 mu1 ~dnorm(0,1e-4)
 mu2 ~dnorm(0,1e-4)
 
-tau1 ~dgamma(0.01, 0.01) #Check prior!
-tau2 ~dgamma(0.01, 0.01)
+tau1 ~dgamma(0.001, 0.001) #Check prior!
+tau2 ~dgamma(0.001, 0.001)
 
 # Hyperpriors for the latent distributions
 # parameterized by mode (m) and standard deviation (sd):

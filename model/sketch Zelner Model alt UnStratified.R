@@ -43,6 +43,7 @@ for(i in 1:N.HH){
     dE[i,1] <-0
     dI[i,1] <-0
     dR[i,1] <-0
+#NOTE in Zelner, dS, dE, dI,, dR are whole people; as it is here, it is fractional
 
     for(t in 2:43){
       dS[i,t] <- -S[i,(t-1)]*(beta * I[i,(t-1)] + alpha)

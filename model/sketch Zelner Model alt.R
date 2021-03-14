@@ -60,6 +60,22 @@ for(i in 1:N.HH){
     SecondaryI[i] <- sum(NewI[i,])
 }
 
+for(i in 1:N.HH){
+     for(j in 1:N.hh.members[i]){
+     
+     alpha[i,j] <- exp(log.alpha[i,j])
+     beta[i,j]  <- exp(log.beta[i,j])
+     log.alpha[i,j] ~ dnorm(mu1,tau1)
+     log.beta[i,j] ~ dnorm(mu2,tau2)
+     
+     }
+  }
+
+mu1 ~dnorm(0,1e-4)
+mu2 ~dnorm(0,1e-4)
+
+tau1 ~dgamma(0.01, 0.01) #Check prior!
+tau2 ~dgamma(0.01, 0.01)
 
 # Hyperpriors for the latent distributions
 # parameterized by mode (m) and standard deviation (sd):
@@ -79,8 +95,7 @@ m3 ~ dunif(2,6) #days
 sd3 ~ dunif(2,3) #SD on days
 
 
-alpha ~ dnorm(0,1e-4)
-beta ~ dnorm(0,1e-4)
+
 
 }
 "

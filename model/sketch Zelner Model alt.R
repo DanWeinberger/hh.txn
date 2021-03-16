@@ -43,28 +43,33 @@ for(i in 1:N.HH){
     epsilon[i,j] <- 1/Dur.Latent[i,j]
     
     ##In this formulation, S,E,I,R are defined by individual; sum_S, sum_E, sum_I are defined by household
-    S[i,j,1] <- (N.hh.members[i] - 1)/N.hh.members[i]
+    S[i,j,1] <- 1-index.case[i,j] #input 0/1
     E[i,j,1] <- 0
-    I[i,j,1] <- 1/N.hh.members[i]
+    I[i,j,1] <- index.case[i,j]
     R[i,j,1] <- 0
-    NewI[i,j,1] <- 0
-    CumNewI[i,j,1] <- 0
-    dS[i,j,1] <-0
-    dE[i,j,1] <-0
-    dI[i,j,1] <-0
-    dR[i,j,1] <-0
+
 
     for(t in 2:(tmax[i]+1)){
-    #dS,dE,dI, dR are effectively a weighted average of individual effects
-      dS[i,j,t] <- (-sum_S[i,(t-1)]*(beta[i,j] * sum_I[i,(t-1)] + alpha[i,j]) )/N.hh.members[i]
-      dE[i,j,t] <- (sum_S[i,(t-1)]*(beta[i,j] * sum_I[i,(t-1)] + alpha[i,j]) - sum_E[i,(t-1)]*delta[i,j])/N.hh.members[i]
-      dI[i,j,t] <- (sum_S[i,(t-1)]*(beta[i,j] * sum_I[i,(t-1)] + alpha[i,j]) - sum_I[i,(t-1)] * epsilon[i,j])/N.hh.members[i]
-      dR[i,j,t] <- (sum_I[i,(t-1)] * epsilon[i,j])/N.hh.members[i]
+      #Define current state
       
-      S[i,j,t] <- dS[i,j,t] + S[i,j,(t-1)]
-      E[i,j,t] <- dE[i,j,t] + E[i,j,(t-1)]
-      I[i,j,t] <- dI[i,j,t] + I[i,j,(t-1)]
-      R[i,j,t] <- dR[i,j,t] + R[i,j,(t-1)]
+      p.S[i,j,t] <- S[i,j,(t-1)] * (1-(beta[i,j] * (sum_I[i,(t-1)]-I[i,j,(t-1)]) + alpha[i,j])) #Prob remain in S
+      p.E[i,j,t] <- E[i,j,(t-1)] * (1-epsilon[i,j]) #Prob stay in E
+      p.I[i,j,t] <- I[i,j,(t-1)] * (1-delta[i,j])   #Prob stay infected
+      
+      S.Draw[i,j,t] ~ dbern(p.S[i,j,t]) 
+      E.Draw[i,j,t] ~ dbern(p.E[i,j,t]) 
+      I.Draw[i,j,t] ~ dbern(p.I[i,j,t]) 
+
+      S[i,j,t] <- S[i,j,(t-1)] * S.Draw[i,j,t] #previously S, draw a 0 or 1
+      
+      E[i,j,t] <- S[i,j,(t-1)]*(1-S.Draw[i,j,t]) + #previously S, current draw S=0 
+                  E[i,j,(t-1)]*E.Draw[i,j,t]  #Previously E, stay E?
+      
+      I[i,j,t] <- E[i,j,(t-1)]*(1-E.Draw[i,j,t]) + #previously E, current draw E=0 
+                  I[i,j,(t-1)]*I.Draw[i,j,t]  #Previously I, stay I? 
+      
+      R[i,j,t] <- R[i,j,t-1] + I[i,j,(t-1)]*(1-I.Draw[i,j,t]) #previously I, current draw I=0 
+
     }
      }
      

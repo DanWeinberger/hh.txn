@@ -4,7 +4,7 @@ model{
 for(i in 1:N.HH){ 
   for(j in 1:N.hh.members[i]){
     
-        y[i,j] ~ dern(q[i,j]) #y=N infected in HH i
+    y[i,j] ~ dern(q[i,j]) #y=N infected in HH i
 
     #day.matrix=day of test for the person
     day.infectious[i,j] <- day.matrix[i,j] - round(infect.dist[i,j])  #infectious prior to test
@@ -31,7 +31,7 @@ for(i in 1:N.HH){
     for(t in 1:tmax[i]){ #how can we do this without looping over all t?
       #need to add 1 to some of these?
       I[i,j,t] <- step(t - day.infectious[i,j]) * (1-step(t-day.infectious.end[i,j])) * infected_matrix[i,j] #they are infected and during infectious period
-      log_prob_no_inf_t[i,j,t] <-  log(1 - beta[i,j] *(sum_I[i,(t-1)]-I[i,j,(t-1)])  + alpha[i,j]) )
+      log_prob_no_inf_t[i,j,t] <-  log(1 - beta[i,j] *(sum_I[i,(t-1)])  + alpha[i,j]) )
 
     }
   }

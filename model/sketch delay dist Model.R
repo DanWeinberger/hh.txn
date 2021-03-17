@@ -4,7 +4,7 @@ model{
 for(i in 1:N.HH){ 
   for(j in 1:N.hh.members[i]){
     
-    y[i,j] ~ dern(q[i,j]) #y=N infected in HH i
+    y[i,j] ~ dbern(q[i,j]) #y=N infected in HH i
 
     #day.matrix=day of test for the person
     day.infectious[i,j] <- day.matrix[i,j] - round(infect.dist[i,j])  #infectious prior to test

@@ -23,7 +23,7 @@ for(i in 1:N.HH){
     
     prob_no_inf_inf_person[i,j] <- exp(sum(log_prob_no_inf_t[i,1:(day.exposed[i,j]-1) )) ])) #P no infections prior to infection
     
-    prob_inf[i,j] <- infected_matrix[i,j] * (1-exp(log_prob_no_inf[i,j,day.exposed[i,j]])) #for infected people only
+    prob_inf[i,j] <- infected_matrix[i,j] * (1-exp(log_prob_no_inf[i,j,day.exposed[i,j]])) #prob infected on dayfor infected people only
     
     q[i,j] <- (prob_no_inf_inf_person[i,j]) * (1 - prob_inf[i,j]) * infected_matrix[i,j] + #prob for infection at time t and not before
       (prob_no_inf_uninf[i,j]) * (1- infected_matrix[i,j] ) + 1e-6 #prob for uninfected peopel    

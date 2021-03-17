@@ -52,20 +52,16 @@ for(i in 1:N.HH){
     for(t in 1:tmax[i]){ #how can we do this without looping over all t?
       #need to add 1 to some of these?
       I[i,j,t] <- step(t - day.infectious[i,j]) * (1-step(t-day.infectious.end[i,j])) * infected_matrix[i,j] #they are infected and during infectious period
-      E[i,j,t] <- step(t - day.exposed[i,j]) * (1-step(t-day.infectious[i,j])*infected_matrix[i,j])
-      S[i,j,t] <- step(-0.5 + (1-infected_matrix[i,j]) + (infected_matrix[i,j]*(1-step(t-day.exposed[i,j])) )) #if they do not have recorded infection OR if they haven't yet been exposed by time t
       log_prob_no_inf_t[i,j,t] <-  log(1 - beta[i,j] *(sum_I[i,(t-1)]-I[i,j,(t-1)])  + alpha[i,j]) )
 
     }
   }
 }
 
-#How many S,E,I people are there at each time point?
+#How many Infected people are there in the HH at each time point?
 for(i in 1:N.HH){
   for(t in 1:tmax[i]){ 
     I_sum[i,t] <- sum(I[i,,t])
-    E_sum[i,t] <- sum(E[i,,t])
-    S_sum[i,t] <- sum(S[i,,t])
   }
 }
 

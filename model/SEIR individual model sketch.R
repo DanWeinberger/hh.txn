@@ -21,7 +21,7 @@ for(i in 1:N.hh){
     
     S[i,j,1] <- 1 * step(abs(index.case[i] - i ) -0.5) #For index case, S=0
     E[i,j,1] <- 0
-    I[i,j,1] <- 1,1] <- 1 * (1- step(abs(index.case[i] - i ) -0.5)) #for index case I=1
+    I[i,j,1] <-  1 * (1- step(abs(index.case[i] - i ) -0.5)) #for index case I=1
     R[i,j,1] <- 0
 
 for(t in 2:(tmax[i]+1)){

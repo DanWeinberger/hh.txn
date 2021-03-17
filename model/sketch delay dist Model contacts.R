@@ -15,29 +15,14 @@ for(i in 1:N.HH){
 
     infect.dist[i,j] ~ dgamma(sh1, ra1) #duration infectiousness
     expose.dist[i,j] ~dgamma(sh2, ra2)
-    end.inf[i,j] ~dgamma(sh3,ra3)
+    end.inf[i,j] ~ dgamma(sh3,ra3)
     
     alpha[i,j] <- delta[1] + delta[2]*vax[i,j]  #could add in things like HH-level random intercept, or intercept to link matched households
     beta[i,j] <- epsilon[1] + epsilon[2]*vax[i,j]
     
-   ##NOTE THESE ARE PROBABLY NOT RIGHT--PROB NEED TO FLIP SOME OF THEM AROUND
-    prob_no_inf_uninf[i,j] <- exp(sum(log_prob_no_inf_t[i,1:day.exposed[i,j]])) #P no infections over all time intervals
-    
-    prob_no_inf_inf_person[i,j] <- exp(sum(log_prob_no_inf_t[i,1:(day.exposed[i,j]-1) )) ])) #P no infections prior to infection
-    
-    prob_inf[i,j] <- infected_matrix[i,j] * (1-exp(log_prob_no_inf[i,j,day.exposed[i,j]])) #prob infected on dayfor infected people only
-    
-    q[i,j] <- (prob_no_inf_inf_person[i,j]) * (1 - prob_inf[i,j]) * infected_matrix[i,j] + #prob for infection at time t and not before
-      (prob_no_inf_uninf[i,j]) * (1- infected_matrix[i,j] ) + 1e-6 #prob for uninfected peopel    
-    
-    #for(t in 1:tmax[i]){ #how can we do this without looping over all t?
-     # I[i,j,t] <- step(t - day.infectious[i,j]) * (1-step(t-day.infectious.end[i,j])) * infected_matrix[i,j] #they are infected and during infectious period
-    #  log_prob_no_inf_t[i,j,t] <-  log(1 - beta[i,j] *(sum_I[i,(t-1)])  + alpha[i,j]) )
-
-    #}
-  
   }
 }
+
 ##Loop over the HH index cases
 for(i in 1:N.HH){ 
   for(j in 1:N.hh.members[i]){ #j is the contact
@@ -66,13 +51,6 @@ for(i in 1:N.HH){
     q[i,j] <- (1-index.case[i,j] * (1-y[i,j]) * (1 - alpha[i,j]) * prob.uninf[i,j] * prob.inf[i,j] + #for contacts
               index.case[i,j] * alpha[i,j] + #for index case
               y[i,j] *(1 - alpha[i,j]) * prob.uninf[i,j]                           #for uninfected person
-  }
-}
-
-#How many Infected people are there in the HH at each time point?
-for(i in 1:N.HH){
-  for(t in 1:tmax[i]){ 
-    I_sum[i,t] <- sum(I[i,,t])
   }
 }
 

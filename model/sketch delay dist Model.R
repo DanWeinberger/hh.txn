@@ -1,32 +1,11 @@
 zelner_jags2 <- "
 model{
-for(i in 1:N.HH){
-
-    y[i] ~ dbinom(prob.hh[i],N.hh.members[i]) #y=N infected in HH i
-    
-    S0[i] = S_sum[i,1] # Initial number of susceptibles in each household
-    Sf[i] = S_sum[i,tmax[i]] # Final number of susceptibles in each household
-    ninfect[i] = S0[i] - Sf[i] # number infected in each household 
-
-    for(t in 1:tmax[i]){
-      log_prob_no_inf_t[i,t] <- -1* S_sum[i,t]*(beta * I_sum[i,t] + alpha)
-    }
-    
-    for(j in 1:N.hh.members[i]){
-       prob_inf[i,j] <- infected_matrix[i,j] * S_sum[i,day.matrix[i,j]]*(beta * I_sum[i,day.matrix[i,j]] + alpha) #for infected people only
-    }
-    
-    prob_no_inf[i] <- exp(sum(log_prob_no_inf_t[i,1:tmax[i]])) #P no infections over all time intervals
-    prob_inf.hh[i] <- exp(sum(log(prob_inf[i,])))
-   
-    prob.hh[i] <- prob_inf.hh[i] * prob_no_inf[i] 
-}
-
-##### Attaching latent piece
 
 for(i in 1:N.HH){ 
   for(j in 1:N.hh.members[i]){
     
+        y[i,j] ~ dern(q[i,j]) #y=N infected in HH i
+
     #day.matrix=day of test for the person
     day.infectious[i,j] <- day.matrix[i,j] - round(infect.dist[i,j])  #infectious prior to test
     day.exposed[i,j] <- day.infectious[i,j] - round(expose.dist[i,j])  #latent period

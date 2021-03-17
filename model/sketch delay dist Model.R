@@ -28,8 +28,8 @@ for(i in 1:N.HH){
     q[i,j] <- (prob_no_inf_inf_person[i,j]) * (1 - prob_inf[i,j]) * infected_matrix[i,j] + #prob for infection at time t and not before
       (prob_no_inf_uninf[i,j]) * (1- infected_matrix[i,j] ) + 1e-6 #prob for uninfected peopel    
     
+    #NOTE: need to make sure that t=0 is ~14 days before first test date
     for(t in 1:tmax[i]){ #how can we do this without looping over all t?
-      #need to add 1 to some of these?
       I[i,j,t] <- step(t - day.infectious[i,j]) * (1-step(t-day.infectious.end[i,j])) * infected_matrix[i,j] #they are infected and during infectious period
       log_prob_no_inf_t[i,j,t] <-  log(1 - beta[i,j] *(sum_I[i,(t-1)])  + alpha[i,j]) )
 

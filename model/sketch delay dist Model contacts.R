@@ -4,12 +4,12 @@ model{
 for(i in 1:N.HH){ 
   for(j in 1:N.hh.members[i]){
     
-    y[i,j] ~ dbern(q[i,j]) #y=N infected in HH i
+    y[i,j] ~ dbern(q[i,j]) #y=N (1= uninfected; 0= infected; person j in HH i)
 
     #day.matrix=day of test for the person
     day.infectious[i,j] <- day.matrix[i,j] - infect.dist[i,j]  #infectious prior to test
     day.exposed[i,j] <- day.infectious[i,j] - expose.dist[i,j]  #latent period
-    day.infectious.end[i,j] <- day.infectious[i,j] + end.inf[i,j]  #how long infectious after test
+    day.infectious.end[i,j] <- day.infectious[i,j] + end.inf[i,j]  #how long infectious after you become infectious
     
     index.case[i,j] <- (1-y[i,j]) * step((min(day.exposed[i,]) - day.exposed[i,j] + 0.5) #indicator for whether this person is an index
 
@@ -18,8 +18,7 @@ for(i in 1:N.HH){
     end.inf[i,j] ~ dgamma(sh3,ra3)
     
     alpha[i,j] <- delta[1] + delta[2]*vax[i,j]  #could add in things like HH-level random intercept, or intercept to link matched households
-    beta[i,j] <- epsilon[1] + epsilon[2]*vax[i,j]
-    
+
   }
 }
 
@@ -31,8 +30,8 @@ for(i in 1:N.HH){
       dur.inf[i,j,m] <- (1-y[i,j])*(day.infectious.end[i,m] - day.infectious[i,m]) #0 for uninfected people
       
       dur.inf.contact[i,j,m] <- step(day.exposed[i,m] - day.infectious[i,j] ) * (
-                                (1-y[i,j])* step(day.infectious.end[i,m] - day.infectious[i,j] +0.5) *(day.infectious[i,m] - day.infectious[i,j]) + # if contact is infected before end of index infectious period 
-                                (1-y[i,j])* step(day.infectious[i,j] - day.infectious.end[i,m]) *(day.infectious[i,m] - day.infectious.end[i,m])  # if contact is infected AFTER end of index infectious period 
+                                (1-y[i,j])* step(day.infectious.end[i,m] - day.exposed[i,j] +0.5) *(day.infectious[i,m] - day.exposed[i,j]) + # if contact is infected before end of index infectious period 
+                                (1-y[i,j])* step(day.exposed[i,j] - day.infectious.end[i,m]) *(day.infectious.end[i,m] - day.infectious[i,m])  # if contact is infected AFTER end of index infectious period 
                         )
       #step(abs(j-m)-0.5) ensures don't count the current j in m
     log.prob.uninf.contact[i,j,m]= step(abs(j-m)-0.5) *log(
@@ -46,16 +45,16 @@ for(i in 1:N.HH){
       )
       
       p_inf[i,j,m] <- exp(log.p_inf[i,j,m])
-      
-      log.p_inf[i,j,m] <-   (beta[i,j] + beta[2,i,m]*vax[i,j] + 
-                              kappa[1,i,m] + kappa[2,i,m]*vax[i,m] 
+      log.p_inf[i,j,m] <-   (beta[1,i,j] + beta[2,i,j]*vax[i,j] + 
+                             kappa[1,i,m] + kappa[2,i,m]*vax[i,m] 
               )
     }
     
     prob.uninf[i,j] <- exp(sum(log.prob.uninf.contact[i,j,]))
     prob.inf.day.inf[i,j] <- (1-exp(sum(log.prob.uninf.contact.day.inf[i,j,m])))
-    q[i,j] <- (1-index.case[i,j] * (1-y[i,j]) * (1 - alpha[i,j]) * prob.uninf[i,j] * prob.inf[i,j] + #for contacts
-              index.case[i,j] * alpha[i,j] + #for index case
+
+    q[i,j] <- (1-index.case[i,j] * (1-y[i,j]) * (1 - alpha[i,j]) * prob.uninf[i,j] * prob.inf.day.inf[i,j] + #for contacts
+              index.case[i,j] * (1-y[i,j]) * alpha[i,j] + #for index case
               y[i,j] *(1 - alpha[i,j]) * prob.uninf[i,j]                           #for uninfected person
   }
 }

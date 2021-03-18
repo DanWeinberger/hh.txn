@@ -44,10 +44,16 @@ for(i in 1:N.HH){
        (1-y[i,j]) * (1-p_inf[i,j,m])^(step(day.exposed[i,j] -  day.infectious[i,m] )*(step(day.infectious.end[i,m] - day.exposed[i,j] ) ) )
         )
       )
+      
+      p_inf[i,j,m] <- exp(log.p_inf[i,j,m])
+      
+      log.p_inf[i,j,m] <-   (beta[i,j] + beta[2,i,m]*vax[i,j] + 
+                              kappa[1,i,m] + kappa[2,i,m]*vax[i,m] 
+              )
     }
     
     prob.uninf[i,j] <- exp(sum(log.prob.uninf.contact[i,j,]))
-    prob.inf.day.inf[i,j] <- (1-sum(log.prob.uninf.contact.day.inf[i,j,m]))
+    prob.inf.day.inf[i,j] <- (1-exp(sum(log.prob.uninf.contact.day.inf[i,j,m])))
     q[i,j] <- (1-index.case[i,j] * (1-y[i,j]) * (1 - alpha[i,j]) * prob.uninf[i,j] * prob.inf[i,j] + #for contacts
               index.case[i,j] * alpha[i,j] + #for index case
               y[i,j] *(1 - alpha[i,j]) * prob.uninf[i,j]                           #for uninfected person
@@ -71,10 +77,23 @@ sh3 <- 1 + m3 * ra3
 m3 ~ dunif(2,6) #days
 sd3 ~ dunif(2,3) #SD on days
 
+mu1 ~dnorm(0,1e-4)
+mu2 ~ dnorm(0,1e-4)
+tau1 ~ dgamma(0.001,0.001)
+tau2 ~ dgamma(0.001,0.001)
+
 for(k in 1:2){
 delta[k] ~dnorm(0,1e-4)
 epsilon[k] ~dnorm(0,1e-4)
+
+for(i in 1:N.HH){ 
+ for(j in 1:N.hh.members[i]){ #j is the contact
+  beta[k,i,j] ~ dnorm(mu1, tau1) 
+  kappa[k,i,j]  ~dnorm(mu2, tau2)
+ }
 }
+}
+
 
 
 }

@@ -11,10 +11,10 @@ for(i in 1:N.HH){
     day.exposed[i,j] <- day.infectious[i,j] - expose.dist[i,j]  #latent period
     day.infectious.end[i,j] <- day.infectious[i,j] + end.inf[i,j]  #how long infectious after you become infectious
     
-    index.case[i,j] <- (1-y[i,j]) * step((min(day.exposed[i,]) - day.exposed[i,j] + 0.5) #indicator for whether this person is an index
+    index.case[i,j] <- (1-y[i,j]) * step((min(day.exposed[i,]) - day.exposed[i,j]) + 0.5) #indicator for whether this person is an index
 
     infect.dist[i,j] ~ dgamma(sh1, ra1) #duration infectiousness
-    expose.dist[i,j] ~dgamma(sh2, ra2)
+    expose.dist[i,j] ~ dgamma(sh2, ra2)
     end.inf[i,j] ~ dgamma(sh3,ra3)
     
     alpha[i,j] <- delta[1] + delta[2]*vax[i,j]  #could add in things like HH-level random intercept, or intercept to link matched households
@@ -51,9 +51,9 @@ for(i in 1:N.HH){
     }
     
     prob.uninf[i,j] <- exp(sum(log.prob.uninf.contact[i,j,]))
-    prob.inf.day.inf[i,j] <- (1-exp(sum(log.prob.uninf.contact.day.inf[i,j,m])))
+    prob.inf.day.inf[i,j] <- (1-exp(sum(log.prob.uninf.contact.day.inf[i,j,])))
 
-    q[i,j] <- (1-index.case[i,j] * (1-y[i,j]) * (1 - alpha[i,j]) * prob.uninf[i,j] * prob.inf.day.inf[i,j] + #for contacts
+    q[i,j] <- (1-index.case[i,j])* (1-y[i,j]) * (1 - alpha[i,j]) * prob.uninf[i,j] * prob.inf.day.inf[i,j] + #for contacts
               index.case[i,j] * (1-y[i,j]) * alpha[i,j] + #for index case
               y[i,j] *(1 - alpha[i,j]) * prob.uninf[i,j]                           #for uninfected person
   }

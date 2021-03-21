@@ -27,7 +27,7 @@ for(i in 1:N.HH){
   for(j in 1:N.hh.members[i]){ #j is the contact
     for(m in 1:N.hh.members[i]){ #m is the index
       
-      dur.inf[i,j,m] <- (1-y[i,j])*(day.infectious.end[i,m] - day.infectious[i,m]) #0 for uninfected people
+      dur.inf[i,j,m] <- y[i,j]*(day.infectious.end[i,m] - day.infectious[i,m]) #0 for uninfected people
       
       dur.inf.contact[i,j,m] <- step(day.exposed[i,m] - day.infectious[i,j] ) * (
                                 (1-y[i,j])* step(day.infectious.end[i,m] - day.exposed[i,j] +0.5) *(day.infectious[i,m] - day.exposed[i,j]) + # if contact is infected before end of index infectious period 

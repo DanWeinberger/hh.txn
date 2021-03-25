@@ -47,7 +47,8 @@ for(i in 1:N.HH){
       }   #### Probability of infection from HH member m (p in the document)
 
     prob.uninf[i,j] <- exp(sum(log.prob.uninf.contact[i,j,1:N.hh.members[i]]))   ### Take the sum over all HH members and then exponentiate to go back to original scale
-    prob.inf.day.inf[i,j] <- (1-exp(sum(log.prob.uninf.contact.day.inf[i,j,1:N.hh.members[i]]))+alpha[i,j])    ### Take the sum over all HH members and then exponentiate to go back to original scale
+    prob.inf.day.inf[i,j] <- (1-exp(sum(log.prob.uninf.contact.day.inf[i,j,1:N.hh.members[i]]))+alpha[i,j])    ### Take the sum over all HH members and then exponentiate to go back to original scale + add 
+    ### probability of infection from the community
 
     q[i,j] <- (1-y2[i,j]) * (1 - alpha[i,j])^(step((day.exposed[i,j]) -min(day.exposed[i,1:N.hh.members[i]]) - 0.5)) * prob.uninf[i,j] * prob.inf.day.inf[i,j] + #for infected contacts (including the index)
     y2[i,j] *(1 - alpha[i,j]) * prob.uninf[i,j]+ 1e-6               #for uninfected person

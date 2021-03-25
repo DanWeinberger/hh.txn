@@ -23,7 +23,7 @@ gen.hh <- function(idN, prob.hh.txn=0.5){
   df1$vax1dose[!(is.na(df1$date.vax1dose))]<-1
   
   df1$date.vax2dose <- as.Date(NA)
-  df1$date.vax2dose[1:nrow(df1)] <- df1$date.vax1dose[1] + 42 +14+ 2*runif(n=(nrow(df1))) 
+  df1$date.vax2dose[1:nrow(df1)] <- df1$date.vax1dose[1] + 21 +14+ 2*runif(n=(nrow(df1))) 
   df1$date.vax2dose[is.na(df1$date.vax1dose)]<-NA
   index_random2 <- sample(0:HH.size,HH.size)
   df1$date.vax2dose[-index_random2] <- NA

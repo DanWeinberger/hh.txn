@@ -43,7 +43,7 @@ for(i in 1:N.HH){
       )) #### This quantity represents the probability of NOT escaping infection from the HH for infected contacts (excluding the index)
 
       p_inf[i,j,m] <- exp(log.p_inf[i,j,m])
-      log.p_inf[i,j,m] <- beta[1,i,j] + beta[2,i,j]*vax[i,j] + kappa[1,i,m] + kappa[2,i,m]*vax[i,m]
+      log.p_inf[i,j,m] <- beta[1] + beta[2]*vax[i,j] + kappa[1] + kappa[2]*vax[i,m]
       }   #### Probability of infection from HH member m (p in the document)
 
     prob.uninf[i,j] <- exp(sum(log.prob.uninf.contact[i,j,1:N.hh.members[i]]))   ### Take the sum over all HH members and then exponentiate to go back to original scale
@@ -77,16 +77,14 @@ mu2 ~ dnorm(0,1e-4)
 tau1 ~ dgamma(0.001,0.001)
 tau2 ~ dgamma(0.001,0.001)
 
-  for(k in 1:2){
-    delta[k] ~dnorm(0,1e-4)
-    epsilon[k] ~dnorm(0,1e-4)
+for(k in 1:2){
+  delta[k] ~dnorm(0,1e-4)
+  epsilon[k] ~dnorm(0,1e-4)
 
-    for(i in 1:N.HH){ 
-      for(j in 1:N.hh.members[i]){ #j is the contact
-        beta[k,i,j] ~ dnorm(mu1, tau1) 
-        kappa[k,i,j]  ~dnorm(mu2, tau2)
-        }
-    }
+  beta[k] ~ dnorm(mu1, tau1) 
+  kappa[k]  ~dnorm(mu2, tau2)
+        
+    
   }
 }
 "

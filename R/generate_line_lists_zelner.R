@@ -33,7 +33,8 @@ gen.hh <- function(idN, prob.hh.txn=0.5){
 
   df1$infected <- NA
   df1$infected[1] <- 1
-  df1$infected[2:nrow(df1)] <- rbinom(n=(nrow(df1)-1),size=1, p=prob.hh.txn)
+  df1$infected[!(is.na(df1$date.vax2dose))] <- rbinom(n=(length(df1$infected[!(is.na(df1$date.vax2dose))])),size=1, p=prob.hh.txn*0.2)
+  df1$infected[(is.na(df1$date.vax2dose))] <- rbinom(n=(length(df1$infected[(is.na(df1$date.vax2dose))])),size=1, p=prob.hh.txn)
   
   
   return(df1)

@@ -16,7 +16,7 @@ gen.hh <- function(idN, prob.hh.txn=0.5){
   df1$date.vax1dose <- as.Date(NA)
   df1$date.vax1dose[1] <- as.Date('2020-12-20')
   df1$date.vax1dose[2:nrow(df1)] <- df1$date.vax1dose[1] + 14 + 5*runif(n=(nrow(df1)-1)) 
-  index_random1 <- sample(0:HH.size,HH.size)
+  index_random1 <- rbinom(0:HH.size,HH.size,prob=0.5)#sample(0:HH.size,HH.size)
   df1$date.vax1dose[-index_random1] <- NA
   
   df1$vax1dose <- 0
@@ -25,7 +25,7 @@ gen.hh <- function(idN, prob.hh.txn=0.5){
   df1$date.vax2dose <- as.Date(NA)
   df1$date.vax2dose[1:nrow(df1)] <- df1$date.vax1dose[1] + 21 +14+ 2*runif(n=(nrow(df1))) 
   df1$date.vax2dose[is.na(df1$date.vax1dose)]<-NA
-  index_random2 <- sample(0:HH.size,HH.size)
+  index_random2 <- rbinom(0:HH.size,HH.size,prob=0.5)#sample(0:HH.size,HH.size)
   df1$date.vax2dose[-index_random2] <- NA
   df1$vax2dose <- 0
   df1$vax2dose[!(is.na(df1$date.vax2dose))]<-1

@@ -7,7 +7,8 @@ obs[81]
 ```{r}
 library(rjags)
 library(HDInterval)
-source('./generate_line_lists_zelner.R') 
+source('./generate_simdata_exposuretime.R') 
+#source('./generate_line_lists_zelner.R') 
 #ds <- readRDS('../data/data.list.rds')
 ```
 

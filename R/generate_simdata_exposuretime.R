@@ -65,7 +65,7 @@ gen.hh <- function(idN, prob.hh.txn=0.5){
       df1$infected[j] <- rbinom(n=1,size=1, p=prob.hh.txn) 
     }
     else if((df1$index.case[j]==1) & (!is.na(df1$date.vax2dose[j]))){
-      df1$infected[j] <- rbinom(n=1,size=1, p=prob.hh.txn*0.2) 
+      df1$infected[j] <- rbinom(n=1,size=1, p=prob.hh.txn*0.5) 
     }
   }
   

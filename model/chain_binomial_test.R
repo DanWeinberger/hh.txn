@@ -50,8 +50,6 @@ for(i in 1:N.HH){
       }
     }
     
-
-    
     prob_uninf_to_timej[i,j] <- exp(sum(log.prob_uninf[i,j,,1:(day.exposed[i,j]-1)]))
     prob_uninf[i,j] <- exp(sum(log.prob_uninf[i,j,,1:time.study.HH[i]]))
     prob_inf_timej[i,j] <- exp(sum(log.prob_inf_timej[i,j,]))

@@ -45,16 +45,16 @@ for(i in 1:N.HH){
       }
 
       for(k in 1:(N.hh.members[i] + 1)){
-        log.prob_inf_timej[i,j,k,t] <- step(abs(j-k)-0.5)*(1-log((1-p[i,j,k,day.exposed[i,j]])^(d[i,j,k,day.exposed[i,j]]))
+        p[i,j,k,] <- exp(log.p[i,j,k,])
+        log.prob_inf_timej[i,j,k] <- step(abs(j-k)-0.5)*(1-log((1-p[i,j,k,day.exposed[i,j]])^(d[i,j,k,day.exposed[i,j]]))
       }
     }
     
-    p[,,,] <- exp(log.p[,,,])
 
     
     prob_uninf_to_timej[i,j] <- exp(sum(log.prob_uninf[i,j,,1:(day.exposed[i,j]-1)]))
     prob_uninf[i,j] <- exp(sum(log.prob_uninf[i,j,,1:time.study.HH[i]]))
-    prob_inf_timej[i,j] <- exp(sum(log.prob_inf_timej[i,j,,]))
+    prob_inf_timej[i,j] <- exp(sum(log.prob_inf_timej[i,j,]))
     prob_inf[i,j] <- prob_uninf_to_timej[i,j]* prob_inf_timej[i,j]
     q[i,j] <- prob_uninf[i,j]*prob_inf[i,j]
   }  

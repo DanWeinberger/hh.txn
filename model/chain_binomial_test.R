@@ -50,6 +50,7 @@ for(i in 1:N.HH){
     prob_uninf[i,j] <- exp(sum(log.prob_uninf[i,j,,1:time.study.HH[i]]))
     prob_inf_timej[i,j] <- exp(sum(log.prob_inf_timej[i,j,]))
     prob_inf[i,j] <- prob_uninf_to_timej[i,j]* prob_inf_timej[i,j]
+    q[i,j] <- prob_uninf[i,j]*prob_inf[i,j]
   }  
 }
 

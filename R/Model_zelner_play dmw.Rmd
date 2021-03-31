@@ -10,12 +10,76 @@ library(HDInterval)
 source('./generate_simdata_exposuretime_DMW2.R') 
 #source('./generate_line_lists_zelner.R') 
 #ds <- readRDS('../data/data.list.rds')
+time.study.HH <- XXXXTODO
 ```
 
 
+## d_jk(t) definition -- this first part can be computed out of JAGS
+
+```{r}
+
+
+N.samples <- 10000
+
+## Define latent distributions
+# Hyperpriors for the latent distributions
+# parameterized by mode (m) and standard deviation (sd):
+m1 <- runif(N.samples,2,6)
+sd1 <- runif(N.samples,2,3) 
+ra1 <- ( m1 + sqrt( m1^2 + 4*sd1^2 ) ) / ( 2 * sd1^2 )
+sh1 <- 1 + m1 * ra1
+
+m2 <- runif(N.samples, 2,6)
+sd2 <- runif(N.samples,2,3)
+ra2 <- ( m2 + sqrt( m2^2 + 4*sd2^2 ) ) / ( 2 * sd2^2 )
+sh2 <- 1 + m2 * ra2
+
+m3 <- runif(N.samples,2,6) #days
+sd3 <- runif(N.samples,2,3) #SD on days
+ra3 <- ( m3 + sqrt( m3^2 + 4*sd3^2 ) ) / ( 2 * sd3^2 )
+sh3 <- 1 + m3 * ra3
+
+day.infectious <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
+day.exposed <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
+day.infectious.end <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
+infect.dist <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
+expose.dist <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
+end.inf  <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
+d <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ), max(time.study.HH))
+  
+for(i in 1:N.HH){
+  for(j in 1:N.hh.members[i]){
+    #day.matrix=day of test for the person
+
+    day.infectious[,i,j] <- day.matrix[i,j] - infect.dist[,i,j]  #infectious prior to test (t_onset in the document)
+    day.exposed[,i,j] <- day.infectious[,i,j] - expose.dist[,i,j]  #latent period (t_infect in the document)
+    day.infectious.end[,i,j] <- day.infectious[,i,j] +
+      end.inf[,i,j]  #how long infectious after onset of infectiousness
+
+    infect.dist[,i,j] <- rgamma(N.samples,sh1, ra1) #duration infectiousness
+    expose.dist[,i,j] <- rgamma(N.samples,sh2, ra2)
+    end.inf[,i,j] <- rgamma(N.samples,sh3,ra3)
+
+    for(t in 1:time.study.HH[i]){
+       d[,i,j,(N.hh.members[i]+1),t] <- 1 #placeholder for exogenous
+
+      for(k in 1:N.hh.members[i]){
+        #### step(abs(j-k)-0.5) ensures don't count the current j in k
+
+        d[,i,j,k,t] <- step(abs(j-k)-0.5)*step( t > day.infectious[,i,k]+0.5)*step( t < min(day.exposed[,i,j], day.infectious.end[,i,k]) + 0.5)
+     
+       }
+    }
+  }
+}
+
+
+
+```
+
 Read in model
 ```{r}
-source('../model/sketch delay dist Model contacts OP.R')
+source('../model/chain_binomial_test.R')
 ```
 
 ```{r}
@@ -37,12 +101,11 @@ model_jags<-jags.model(model_spec,
                        inits=list(inits1),
 
                                  data=list('N.HH'=N.HH,
-                                 'vax'=vax,
+                                 'vaxdose1'=vaxdose1,                                                       'vaxdose2'=vaxdose2,
+                                 'd.samples'=d,
                                  'N.hh.members'=N.hh.members,
-                                 #'infected_matrix'=infected_matrix,
                                  'day.matrix'=day.matrix,
                                  'y' = (1-infected_matrix),
-                                 'y2'= (1-infected_matrix)
                                  #'tmax'=apply(day.matrix,1,max,na.rm=T)
                                  ),
                        n.adapt=10000, 

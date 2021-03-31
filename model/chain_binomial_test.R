@@ -34,21 +34,25 @@ for(i in 1:N.HH){
 
     y[i,j] ~ dbern(q[i,j]) #(Person j in HH i: 1= uninfected; 0= infected)
 
-    for(k in 0:N.hh.members[i]){ #k is different from j
+
+    for(k in 1:N.hh.members[i]){ #k is different from j
       for(t in 1:time.study.HH[i]){
         log.prob_uninf[i,j,k,t] <- step(abs(j-k)-0.5)*log((1-p[i,j,k,t])^(d[i,j,k,t]))
-        log.p[i,j,k+1,t] <- alpha0 + beta1*vaxdose1[i,j] +  beta2*vaxdose2[i,j] + kappa1*vaxdose1[i,k+1] +  kappa2*vaxdose2[i,k+1]
-        log.p[i,j,0,t] <- delta0 + beta1*vaxdose1[i,j] +  beta2*vaxdose2[i,j] 
+        log.p[i,j,k,t] <- alpha0 + beta1*vaxdose1[i,j] +  beta2*vaxdose2[i,j] + kappa1*vaxdose1[i,k] +  kappa2*vaxdose2[i,k]
+      }
 
+      ###Define outside-hh infections for 
+      for(t in 1:time.study.HH[i]){
+        log.p[i,j,(N.hh.members[i]+1),t] <- delta0 + beta1*vaxdose1[i,j] +  beta2*vaxdose2[i,j] 
       }
       
-      p[i,j,k] <- exp(log.p[i,j,k])
-      log.prob_inf_timej[i,j,k] <- step(abs(j-k)-0.5)*(1-log((1-p[i,j,k,day.exposed[i,j]])^(d[i,j,k,day.exposed[i,j]]))
+      p[i,j,k,] <- exp(log.p[i,j,k,])
+      log.prob_inf_timej[i,j,k,t] <- step(abs(j-k)-0.5)*(1-log((1-p[i,j,k,day.exposed[i,j]])^(d[i,j,k,day.exposed[i,j]]))
     }
     
     prob_uninf_to_timej[i,j] <- exp(sum(log.prob_uninf[i,j,,1:(day.exposed[i,j]-1)]))
     prob_uninf[i,j] <- exp(sum(log.prob_uninf[i,j,,1:time.study.HH[i]]))
-    prob_inf_timej[i,j] <- exp(sum(log.prob_inf_timej[i,j,]))
+    prob_inf_timej[i,j] <- exp(sum(log.prob_inf_timej[i,j,,]))
     prob_inf[i,j] <- prob_uninf_to_timej[i,j]* prob_inf_timej[i,j]
     q[i,j] <- prob_uninf[i,j]*prob_inf[i,j]
   }  
@@ -78,7 +82,7 @@ sd3 ~ dunif(2,3) #SD on days
 #tau2 ~ dgamma(0.001,0.001)
 
 
-delta0 ~dnorm(0,1e-4)
+delta0 ~dnorm(0,1e-4) 
 alpha0 ~dnorm(0,1e-4)
 
 beta1 ~ dnorm(0,1e-4) 

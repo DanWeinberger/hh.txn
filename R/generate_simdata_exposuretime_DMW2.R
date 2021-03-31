@@ -61,7 +61,7 @@ gen.hh <- function(idN,  prob.trans.day=0.1, prop.vax1=0.5, prop.vax2=0.5, irr.v
   
    
 #Generate the data and store as a data frame
-hh_list <- lapply(1:1000,gen.hh )
+hh_list <- lapply(1:100,gen.hh )
 hh_df <- do.call('rbind.data.frame', hh_list)
 
 hh_df.m <- melt(hh_df[,c('day_index','hhID','ID','infected','vax1dose')], id.vars=c('hhID','ID'))

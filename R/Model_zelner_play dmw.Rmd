@@ -48,7 +48,7 @@ end.inf  <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
     
    #Generate random draws for duration of infectious, 
     infect.dist <-  
-      array(rgamma(n.sim,sh1, ra1), dim=c(N.HH,max(N.hh.members), N.samples)) #duration infectiousness
+      array(rgamma(n.sim,sh1, ra1), dim=c(N.HH,max(N.hh.members), N.samples)) #duration infectiousness (actually is duration of time from infectiousness to test)
     
     expose.dist <- 
       array(rgamma(n.sim,sh2, ra2), dim=c(N.HH,max(N.hh.members), N.samples)) 
@@ -57,7 +57,7 @@ end.inf  <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
       array(rgamma(n.sim,sh3,ra3),  dim=c(N.HH,max(N.hh.members), N.samples)) 
     
     max.time.hh <- round(apply(expose.dist,c(1,3),max, na.rm=T) +
-      apply(infect.dist,c(1,3),max, na.rm=T) )
+      apply(infect.dist,c(1,3),max, na.rm=T) ) +1
 
        #check
    #  day.infectious <-apply(infect.dist,2, function(x) day.matrix  )
@@ -78,7 +78,7 @@ end.inf  <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
    
 
    #for each hh set t=1 to be first
-   last.day.infect.hh <- apply(day.infectious, c(1,3), max, na.rm=T)
+   last.day.infect.hh <- apply(round(day.infectious + end.inf), c(1,3), max, na.rm=T)
    first.day.infect.hh <- round(apply(day.infectious - expose.dist , c(1,3), min, na.rm=T))
    
   for(i in 1:N.samples){
@@ -101,7 +101,7 @@ end.inf  <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
     for( i in 1:N.samples){
       max.hh.time <- apply(day.infectious.end[,,i],1, max, na.rm=T)
       min.hh.time <- apply(day.exposed[,,i],1, min, na.rm=T)
-          time.study.HH[,i] <- max.hh.time - min.hh.time
+          time.study.HH[,i] <- max.hh.time - min.hh.time +1
     }
     
     time.study.HH <- round(time.study.HH+20)
@@ -142,7 +142,8 @@ model_jags<-jags.model(model_spec,
                                  'day.exposed'=day.exposed,
                                  'day.infectious.end'=day.infectious.end,
                                  'y' = (1-infected_matrix),
-                                 'selecter1'=1,
+                                 'y2' = (1-infected_matrix),
+                                                                  'selecter1'=1,
                                  'time.study.HH'=time.study.HH
                                  #'tmax'=apply(day.matrix,1,max,na.rm=T)
                                  ),

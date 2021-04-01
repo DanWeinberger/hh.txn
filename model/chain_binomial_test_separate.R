@@ -1,8 +1,8 @@
 chain_binomial_jags <- "
 model{
 
-### Part 1: d_jk(t) definition -- this first part is computed out of JAGS
-selecter ~ runif(1,10000) #select random draw 
+#select random draw from the delay distributions
+selecter ~ dunif(1,10000) 
 selecter1 <- round(selecter)
 
 #### Part 2: Likelihood definition

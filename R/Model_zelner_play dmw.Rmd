@@ -17,7 +17,6 @@ source('./generate_simdata_exposuretime_DMW2.R')
 
 ```{r}
 
-
 N.samples <- 10000
 
 ## Define latent distributions

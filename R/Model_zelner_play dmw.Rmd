@@ -13,11 +13,18 @@ source('./generate_simdata_exposuretime_DMW2.R')
 ```
 
 
+```{r}
+N.samples <- 10
+hh_df_rep <- hh_df[rep(1:nrow(hh_df), times = N.samples),]
+hh_df_rep$iter <- rep(1:N.samples, each = nrow(hh_df))
+```
+
+
+
 ## d_jk(t) definition -- this first part can be computed out of JAGS
 
 ```{r}
 
-N.samples <- 10000
 
 ## Define latent distributions
 # Hyperpriors for the latent distributions

@@ -9,7 +9,7 @@ d[,,,] <- d.iter[round(selecter),,,,]
 for(i in 1:N.HH){ 
   for(j in 1:N.hh.members[i]){ 
 
-    y[i,j] ~ dbern(q[i,j]) #(Person j in HH i: 1= uninfected; 0= infected)
+    #y[i,j] ~ dbern(q[i,j]) #(Person j in HH i: 1= uninfected; 0= infected)
 
     for(t in 1:time.study.HH[i]){
         log.p[i,j,(N.hh.members[i]+1),t] <- delta0 + beta1*vaxdose1[i,j] +  beta2*vaxdose2[i,j] #outside HH infection
@@ -28,7 +28,7 @@ for(i in 1:N.HH){
     prob_uninf[i,j] <- exp(sum(log.prob_uninf[i,j,,1:time.study.HH[i]]))
     prob_inf_timej[i,j] <- exp(sum(log.prob_inf_timej[i,j,]))
     prob_inf[i,j] <- prob_uninf_to_timej[i,j]* prob_inf_timej[i,j]
-    q[i,j] <- y[i,j]*prob_uninf[i,j] + (1-y[i,j])*prob_inf[i,j]
+    logLike[i,j] <- y[i,j]*prob_uninf[i,j] + (1-y[i,j])*prob_inf[i,j]
   }  
 }
 

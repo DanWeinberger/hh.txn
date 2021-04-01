@@ -47,27 +47,54 @@ end.inf  <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
    n.sim <- N.samples*N.HH*max(N.hh.members)
     
    #Generate random draws for duration of infectious, 
-    infect.dist <- matrix(rgamma(n.sim,sh1, ra1), ncol=N.samples) #duration infectiousness
+    infect.dist <-  
+      array(rgamma(n.sim,sh1, ra1), dim=c(N.HH,max(N.hh.members), N.samples)) #duration infectiousness
     
     expose.dist <- 
       array(rgamma(n.sim,sh2, ra2), dim=c(N.HH,max(N.hh.members), N.samples)) 
     
     end.inf <-
       array(rgamma(n.sim,sh3,ra3),  dim=c(N.HH,max(N.hh.members), N.samples)) 
+    
+    max.time.hh <- round(apply(expose.dist,c(1,3),max, na.rm=T) +
+      apply(infect.dist,c(1,3),max, na.rm=T) )
 
        #check
    #  day.infectious <-apply(infect.dist,2, function(x) day.matrix  )
    # day.infectious <- array(day.infectious, dim=c(dim(day.matrix),N.samples ))
    # sum(day.infectious[,,1]== day.matrix, na.rm=T) == sum(!is.na(day.infectious[,,1]))
     
-   day.infectious <-apply(infect.dist,2, function(x) day.matrix - x )
-   day.infectious <- array(day.infectious, dim=c(dim(day.matrix),N.samples ))
+   day.infectious <- array(NA, dim=c(dim(day.matrix),N.samples ))
+   for(i in 1:N.samples){
+      day.infectious[,,i] <- day.matrix - infect.dist[,,i]
+   }
+   
+    for(i in 1:N.samples){
+      for(j in 1:dim(day.infectious)[1]){
+        day.infectious[j,,i] <- day.infectious[j,,i] + max.time.hh[j,i]
+
+      }
+    }
+   
+
+   #for each hh set t=1 to be first
+   last.day.infect.hh <- apply(day.infectious, c(1,3), max, na.rm=T)
+   first.day.infect.hh <- round(apply(day.infectious - expose.dist , c(1,3), min, na.rm=T))
+   
+   for(i in 1:N.samples){
+     day.infectious[,,i] <- t(apply(day.infectious[,,i],1, function(x){
+       z <- x - min(x, na.rm=T)  
+       return(z)
+     }))
+   }
+  # View(day.infectious[,,1])
+   
    
     day.exposed <-  
-      day.infectious - expose.dist  #latent period (t_infect in the document)
+      round(day.infectious - expose.dist)  #latent period (t_infect in the document)
     
     day.infectious.end <- 
-      day.infectious + end.inf #how long infectious after onset of infectiousness
+      round(day.infectious + end.inf) #how long infectious after onset of infectiousness
     
     #i,10000 matrix
     time.study.HH <- matrix(NA, nrow=dim(day.infectious.end)[1], N.samples)
@@ -77,11 +104,17 @@ end.inf  <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
           time.study.HH[,i] <- max.hh.time - min.hh.time
     }
     
+    time.study.HH <- round(time.study.HH)
+    
+    
+    #
+    
+    
 ```
 
 Read in model
 ```{r}
-source('../model/chain_binomial_test.R')
+source('../model/chain_binomial_test_separate.R')
 ```
 
 ```{r}
@@ -104,13 +137,12 @@ model_jags<-jags.model(model_spec,
 
                                  data=list('N.HH'=N.HH,
                                  'vaxdose1'=vax,                                                       #'vaxdose2'=vaxdose2,
-                                 'd.samples'=d,
                                  'N.hh.members'=N.hh.members,
-                                 'day.matrix'=day.matrix,
                                  'day.infectious'=day.infectious,
                                  'day.exposed'=day.exposed,
                                  'day.infectious.end'=day.infectious.end,
                                  'y' = (1-infected_matrix),
+                                 'selecter1'=1,
                                  'time.study.HH'=time.study.HH
                                  #'tmax'=apply(day.matrix,1,max,na.rm=T)
                                  ),

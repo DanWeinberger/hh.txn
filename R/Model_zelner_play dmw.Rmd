@@ -10,7 +10,6 @@ library(HDInterval)
 source('./generate_simdata_exposuretime_DMW2.R') 
 #source('./generate_line_lists_zelner.R') 
 #ds <- readRDS('../data/data.list.rds')
-time.study.HH <- XXXXTODO
 ```
 
 
@@ -39,42 +38,46 @@ sd3 <- runif(N.samples,2,3) #SD on days
 ra3 <- ( m3 + sqrt( m3^2 + 4*sd3^2 ) ) / ( 2 * sd3^2 )
 sh3 <- 1 + m3 * ra3
 
-day.infectious <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
-day.exposed <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
+day.infectious <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members) ))
+day.exposed <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members) ))
 day.infectious.end <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
 infect.dist <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
 expose.dist <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
 end.inf  <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ))
-d <- array(NA, dim=c(N.samples,N.HH,max(N.hh.members+1) ), max(time.study.HH))
-  
-for(i in 1:N.HH){
-  for(j in 1:N.hh.members[i]){
-    #day.matrix=day of test for the person
 
-    day.infectious[,i,j] <- day.matrix[i,j] - infect.dist[,i,j]  #infectious prior to test (t_onset in the document)
-    day.exposed[,i,j] <- day.infectious[,i,j] - expose.dist[,i,j]  #latent period (t_infect in the document)
-    day.infectious.end[,i,j] <- day.infectious[,i,j] +
-      end.inf[,i,j]  #how long infectious after onset of infectiousness
+   n.sim <- N.samples*N.HH*max(N.hh.members)
+    
+   #Generate random draws for duration of infectious, 
+    infect.dist <- matrix(rgamma(n.sim,sh1, ra1), ncol=N.samples) #duration infectiousness
+    
+    expose.dist <- 
+      array(rgamma(n.sim,sh2, ra2), dim=c(N.HH,max(N.hh.members), N.samples)) 
+    
+    end.inf <-
+      array(rgamma(n.sim,sh3,ra3),  dim=c(N.HH,max(N.hh.members), N.samples)) 
 
-    infect.dist[,i,j] <- rgamma(N.samples,sh1, ra1) #duration infectiousness
-    expose.dist[,i,j] <- rgamma(N.samples,sh2, ra2)
-    end.inf[,i,j] <- rgamma(N.samples,sh3,ra3)
-
-    for(t in 1:time.study.HH[i]){
-       d[,i,j,(N.hh.members[i]+1),t] <- 1 #placeholder for exogenous
-
-      for(k in 1:N.hh.members[i]){
-        #### step(abs(j-k)-0.5) ensures don't count the current j in k
-
-        d[,i,j,k,t] <- step(abs(j-k)-0.5)*step( t > day.infectious[,i,k]+0.5)*step( t < min(day.exposed[,i,j], day.infectious.end[,i,k]) + 0.5)
-     
-       }
+       #check
+   #  day.infectious <-apply(infect.dist,2, function(x) day.matrix  )
+   # day.infectious <- array(day.infectious, dim=c(dim(day.matrix),N.samples ))
+   # sum(day.infectious[,,1]== day.matrix, na.rm=T) == sum(!is.na(day.infectious[,,1]))
+    
+   day.infectious <-apply(infect.dist,2, function(x) day.matrix - x )
+   day.infectious <- array(day.infectious, dim=c(dim(day.matrix),N.samples ))
+   
+    day.exposed <-  
+      day.infectious - expose.dist  #latent period (t_infect in the document)
+    
+    day.infectious.end <- 
+      day.infectious + end.inf #how long infectious after onset of infectiousness
+    
+    #i,10000 matrix
+    time.study.HH <- matrix(NA, nrow=dim(day.infectious.end)[1], N.samples)
+    for( i in 1:N.samples){
+      max.hh.time <- apply(day.infectious.end[,,i],1, max, na.rm=T)
+      min.hh.time <- apply(day.exposed[,,i],1, min, na.rm=T)
+          time.study.HH[,i] <- max.hh.time - min.hh.time
     }
-  }
-}
-
-
-
+    
 ```
 
 Read in model
@@ -95,17 +98,21 @@ inits3=list(".RNG.seed"=c(789), ".RNG.name"='base::Wichmann-Hill')
 ##############################################
 #Model Organization
 ##############################################
-model_spec<-textConnection(zelner_jags)
+model_spec<-textConnection(chain_binomial_jags)
 model_jags<-jags.model(model_spec, 
                        #inits=list(inits1,inits2, inits3),
                        inits=list(inits1),
 
                                  data=list('N.HH'=N.HH,
-                                 'vaxdose1'=vaxdose1,                                                       'vaxdose2'=vaxdose2,
+                                 'vaxdose1'=vax,                                                       #'vaxdose2'=vaxdose2,
                                  'd.samples'=d,
                                  'N.hh.members'=N.hh.members,
                                  'day.matrix'=day.matrix,
+                                 'day.infectious'=day.infectious,
+                                 'day.exposed'=day.exposed,
+                                 'day.infectious.end'=day.infectious.end,
                                  'y' = (1-infected_matrix),
+                                 'time.study.HH'=time.study.HH
                                  #'tmax'=apply(day.matrix,1,max,na.rm=T)
                                  ),
                        n.adapt=10000, 

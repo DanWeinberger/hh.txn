@@ -37,8 +37,8 @@ for(i in 1:N.HH){
     }
     
     log.prob_inf_timej[i,j,N.hh.members[i]+1] <- log(1-(1-p[i,j,(N.hh.members[i]+1),day.exposed[i,j,selecter1]])^(d[i,j,(N.hh.members[i]+1),day.exposed[i,j,selecter1]]))
-    prob_uninf_to_timej[i,j] <- exp(sum(log.prob_uninf[i,j,1:N.hh.members[i],1:(day.exposed[i,j,selecter1]-1)]))
-    prob_uninf[i,j] <- exp(sum(log.prob_uninf[i,j,1:N.hh.members[i],1:time.study.HH[i,selecter1]]))
+    prob_uninf_to_timej[i,j] <- exp(sum(log.prob_uninf[i,j,1:(N.hh.members[i]+1),1:(day.exposed[i,j,selecter1]-1)]))
+    prob_uninf[i,j] <- exp(sum(log.prob_uninf[i,j,1:(N.hh.members[i]+1),1:time.study.HH[i,selecter1]]))
     prob_inf_timej[i,j] <- exp(sum(log.prob_inf_timej[i,j,1:(N.hh.members[i]+1)]))
     prob_inf[i,j] <- prob_uninf_to_timej[i,j]* prob_inf_timej[i,j]
     like[i,j] <- y2[i,j]*prob_uninf[i,j] + (1-y2[i,j])*prob_inf[i,j]+ 1e-6  

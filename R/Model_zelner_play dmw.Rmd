@@ -154,10 +154,12 @@ model_jags<-jags.model(model_spec,
 ```
 
 ```{r}
-params<-c('alpha',
-          'beta',
-          'kappa',
-          'delta')
+params<-c('alpha0',
+          'delta0',
+          'beta1',
+          'beta2',
+          'kappa1',
+          'kappa2')
 
 ##############################################
 #Posterior Sampling
@@ -176,8 +178,8 @@ post_means<-sprintf("%.1f",round(post_means,1))
 names(post_means)<-sample.labs
 
 alpha.index <- grep('alpha',sample.labs)
-beta.index <- grep('beta',sample.labs)
-kappa.index <- grep('kappa',sample.labs)
+beta.index <- grep('beta1',sample.labs)
+kappa.index <- grep('kappa1',sample.labs)
 delta.index <- grep('delta',sample.labs)
 
 
@@ -188,12 +190,9 @@ ci[delta.index,]
 
 
 #Test combo of beta and kappa
-beta2.index <- grep('beta[2]',sample.labs, fixed=T)
-kappa2.index <- grep('kappa[2]',sample.labs, fixed=T)
-delta2.index <- grep('delta[2]',sample.labs, fixed=T)
 
-beta_kappa_delta <- 
-  posterior_samples.all[,beta2.index] + posterior_samples.all[,kappa2.index]
+beta_kappa <- 
+  posterior_samples.all[,beta.index] + posterior_samples.all[,kappa.index]
 hist(beta_kappa)
 ```
 

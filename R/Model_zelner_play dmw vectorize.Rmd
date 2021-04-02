@@ -85,10 +85,9 @@ sh3 <- 1 + m3 * ra3
 
         
 ```
-
 Read in model
 ```{r}
-source('../model/chain_binomial_test_separate.R')
+source('../model/chain_binomial_test_separate_vectorize.R')
 ```
 
 ```{r}
@@ -110,15 +109,15 @@ model_jags<-jags.model(model_spec,
                        inits=list(inits1),
 
                                  data=list('N.obs'=dim(hh_df_rep.c)[[2]],
-                                 'vaxdose1'=hh_df_rep.c['vax1dose',,1],                                   
-                                   'day.infectious'=hh_df_rep.c['day.infectious',,],
+                                 'vaxdose1'=hh_df_rep.c['vax1dose',,,1],                                   
+                                   'day.infectious'=hh_df_rep.c['day.infectious',,,],
                                  
-                                 'day.exposed'=hh_df_rep.c['day.exposed',,],
-                                                                  'day.infectious.end'=hh_df_rep.c['day.infectious.end',,],
-                                 'y' = (1-hh_df_rep.c['infected',,1]),
-                                 'y2' = (1-hh_df_rep.c['infected',,1]),
+                                 'day.exposed'=hh_df_rep.c['day.exposed',,,],
+                                                                  'day.infectious.end'=hh_df_rep.c['day.infectious.end',,,],
+                                 'y' = (1-hh_df_rep.c['infected',,,1]),
+                                 'y2' = (1-hh_df_rep.c['infected',,,1]),
                                                                   'selecter1'=1,
-                                 'time.study.HH'=hh_df_rep.c['max.time.hh',,]
+                                 'time.study.HH'=hh_df_rep.c['max.time.hh',,,]
                                  #'tmax'=apply(day.matrix,1,max,na.rm=T)
                                  ),
                        n.adapt=10000, 

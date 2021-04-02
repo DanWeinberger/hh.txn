@@ -1,0 +1,172 @@
+## Generate simulated data
+nY vector[2400]
+T [2400,30]
+incub[81]
+obs[81]
+
+```{r}
+library(rjags)
+library(HDInterval)
+source('./generate_simdata_exposuretime_DMW2.R') 
+#source('./generate_line_lists_zelner.R') 
+#ds <- readRDS('../data/data.list.rds')
+```
+
+
+```{r}
+N.samples <- 1000
+hh_df_rep <- hh_df[rep(1:nrow(hh_df), times = N.samples),]
+hh_df_rep$iter <- rep(1:N.samples, each = nrow(hh_df))
+```
+
+
+
+## d_jk(t) definition -- this first part can be computed out of JAGS
+
+```{r}
+
+
+## Define latent distributions
+# Hyperpriors for the latent distributions
+# parameterized by mode (m) and standard deviation (sd):
+m1 <- runif(nrow(hh_df_rep),2,6)
+sd1 <- runif(nrow(hh_df_rep),2,3) 
+ra1 <- ( m1 + sqrt( m1^2 + 4*sd1^2 ) ) / ( 2 * sd1^2 )
+sh1 <- 1 + m1 * ra1
+
+m2 <- runif(nrow(hh_df_rep), 2,6)
+sd2 <- runif(nrow(hh_df_rep),2,3)
+ra2 <- ( m2 + sqrt( m2^2 + 4*sd2^2 ) ) / ( 2 * sd2^2 )
+sh2 <- 1 + m2 * ra2
+
+m3 <- runif(nrow(hh_df_rep),2,6) #days
+sd3 <- runif(nrow(hh_df_rep),2,3) #SD on days
+ra3 <- ( m3 + sqrt( m3^2 + 4*sd3^2 ) ) / ( 2 * sd3^2 )
+sh3 <- 1 + m3 * ra3
+
+
+   #Generate random draws for duration of infectious, 
+    n.sim <- nrow(hh_df_rep)
+    
+    hh_df_rep$infect.dist <- rgamma(n.sim,sh1, ra1) #duration infectiousness (actually is duration of time from infectiousness to test)
+    
+    hh_df_rep$expose.dist <- rgamma(n.sim,sh2, ra2)
+    
+    hh_df_rep$end.inf <- rgamma(n.sim,sh3,ra3)
+    
+    hh_df_rep.spl <- split(hh_df_rep, paste0(hh_df_rep$iter,hh_df_rep$hhID))
+    
+    hh_df_rep.spl <- lapply(hh_df_rep.spl, function(x){
+           x$day.infectious1 <- round(x$day_index - x$infect.dist)
+           x$day.exposed1 <- round(x$day.infectious - x$expose.dist)
+           x$day.infectious.end1 <-  round(x$day.infectious + x$end.inf)
+           x$first.day.hh <- min(x$day.exposed, na.rm=T) - 1
+           x$last.day.hh <- max(x$day.infectious.end, na.rm=T)
+
+           x$day.infectious <- x$day.infectious1 - x$first.day.hh
+           x$day.exposed <- x$day.exposed1 - x$first.day.hh
+           x$day.infectious.end <- x$day.infectious.end1 - x$first.day.hh
+           x$max.time.hh <- max(x$day.infectious.end, na.rm=T)
+          return(x)
+    } )
+    
+    hh_df_rep.spl[[1]] #check
+    hh_df_rep.spl[[2]] #check
+
+    hh_df_rep <- do.call('rbind.data.frame', hh_df_rep.spl)
+    
+    #Then reshape slightly for JAGS
+    hh_df_rep.m <- melt(hh_df_rep[,c('infected','max.time.hh','day.infectious','day.exposed','day.infectious.end','iter','ID','hhID',"vax1dose","vax2dose")],id.vars=c('ID','hhID','iter'))
+    
+    hh_df_rep.c <- acast(hh_df_rep.m, variable ~  ID+hhID ~ iter  ) 
+    
+
+    hh_df_rep.c <- acast(hh_df_rep.m, variable ~  ID ~ hhID ~ iter  ) 
+
+        
+```
+
+
+Read in model
+```{r}
+source('../model/chain_binomial_test_separate.R')
+```
+
+```{r}
+##############################################################
+#Model Fitting
+##############################################################
+inits1=list(".RNG.seed"=c(123), ".RNG.name"='base::Wichmann-Hill')
+inits2=list(".RNG.seed"=c(456), ".RNG.name"='base::Wichmann-Hill')
+inits3=list(".RNG.seed"=c(789), ".RNG.name"='base::Wichmann-Hill')
+
+
+
+##############################################
+#Model Organization
+##############################################
+model_spec<-textConnection(chain_binomial_jags)
+model_jags<-jags.model(model_spec, 
+                       #inits=list(inits1,inits2, inits3),
+                       inits=list(inits1),                                           
+                       data=list('N.HH'=nrow(infected_matrix),                                                                               'N.hh.members'= N.hh.members,
+                                 'vaxdose1'=hh_df_rep.c['vax1dose',,,1],                                   
+                                   'day.infectious'=hh_df_rep.c['day.infectious',,,],
+                                 
+                                 'day.exposed'=hh_df_rep.c['day.exposed',,,]+1,
+                                                                    'day.infectious.end'=hh_df_rep.c['day.infectious.end',,,],
+                                 'y' = t(1-hh_df_rep.c['infected',,,1]),
+                                 'y2' = t(1-hh_df_rep.c['infected',,,1]),
+                                 'selecter1'=1,
+                                 'time.study.HH'=hh_df_rep.c['max.time.hh',,,]
+                                 ),
+                       n.adapt=10000,
+                       n.chains=1)
+
+```
+
+```{r}
+params<-c('alpha0',
+          'delta0',
+          'beta1',
+          'beta2',
+          'kappa1',
+          'kappa2')
+
+##############################################
+#Posterior Sampling
+##############################################
+posterior_samples<-coda.samples(model_jags, 
+                                params, 
+                                n.iter=10000)
+posterior_samples.all<-do.call(rbind,posterior_samples)
+
+post_means<-apply(posterior_samples.all, 2, median)
+sample.labs<-names(post_means)
+ci<-t(hdi(posterior_samples.all, credMass = 0.95))
+ci<-matrix(sprintf("%.1f",round(ci,1)), ncol=2)
+row.names(ci)<-sample.labs
+post_means<-sprintf("%.1f",round(post_means,1))
+names(post_means)<-sample.labs
+
+alpha.index <- grep('alpha',sample.labs)
+beta.index <- grep('beta1',sample.labs)
+kappa.index <- grep('kappa1',sample.labs)
+delta.index <- grep('delta',sample.labs)
+
+
+ci[alpha.index,]
+ci[beta.index,]
+ci[kappa.index,]
+ci[delta.index,]
+
+
+#Test combo of beta and kappa
+
+beta_kappa <- 
+  posterior_samples.all[,beta.index] + posterior_samples.all[,kappa.index]
+hist(beta_kappa)
+```
+
+
+

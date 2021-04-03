@@ -5,6 +5,9 @@ date: "4/3/2021"
 output: html_document
 ---
 
+NOTE: The Longini code is not idea for this task because most households will have a mix of vaccinated and unvaccinated people, and we are comparing here households with no vaccine with households with some vaccine. That makes this very inefficient.
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```

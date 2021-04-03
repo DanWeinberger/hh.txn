@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(rjags)
 library(HDInterval)
 library(reshape2)
+library(pbapply)
 set.seed(123456)
 
 source('./generate_simdata_exposuretime_DMW2.R') 
@@ -23,10 +24,8 @@ source('./generate_simdata_exposuretime_DMW2.R')
 Setup data from line list to HH transmission model
 ```{r}
 
-
-
 #Generate the data and store as a data frame
-hh_list <- lapply(1:1000,gen.hh )
+hh_list <- pblapply(1:5000,gen.hh )
 
 hh_df <- do.call('rbind.data.frame', hh_list)
 
@@ -48,7 +47,7 @@ hh_summary <- cbind.data.frame(n_people_hh,n_infected_hh,n_vax_hh)
 
 hh_summary$vax1 <- 0
 
-hh_summary$vax1[hh_summary$n_vax_hh>1] <- 1 
+hh_summary$vax1[hh_summary$n_vax_hh>=1] <- 1 
 
 hh_summary$one <- 1
 
@@ -58,7 +57,7 @@ hh_summary.m <-
 ds1 <- 
   acast(hh_summary.m, n_infected_hh ~ n_people_hh~vax1, fun.aggregate=length)
 
-if(dim(ds1)[[1]] < dim(ds1)[[2]]  ){
+if(dim(ds1)[[1]] <= dim(ds1)[[2]]  ){
   n.dim.add <- dim(ds1)[[2]] - dim(ds1)[[1]] + 1
   ds.add <- array(0, dim=c( n.dim.add,dim(ds1)[[2]], dim(ds1)[[3]] ) )
   ds <- abind(ds1, ds.add, along=c(1))
@@ -67,6 +66,11 @@ if(dim(ds1)[[1]] < dim(ds1)[[2]]  ){
 }
 
 apply(ds,3,sum)
+
+vax.prop <- apply(ds[,,2] , 2, function(x) x/sum(x, na.rm=T)) 
+unvax.prop <- apply(ds[,,1] , 2, function(x) x/sum(x, na.rm=T)) 
+
+irr.crude <- vax.prop/unvax.prop
 
 ```
 
@@ -118,6 +122,9 @@ params<-c('B','Q', 'beta1','delta1','alpha1','alpha2')
 posterior_samples_covar<-coda.samples(model_jags_covar, 
                                 params, 
                                 n.iter=10000)
+```
+
+```{r}
 posterior_samples.covar.all<-do.call(rbind,posterior_samples_covar)
 post_median<-apply(posterior_samples.covar.all, 2, median)
 sample.labs<-names(post_median)
@@ -156,7 +163,7 @@ CPI.ratio.hdi
 #Ratio of SAR for HH with and without kids 
 SAR1.samples <- 1 - posterior_samples.covar.all[,Q1.index]
 SAR2.samples <- 1 - posterior_samples.covar.all[,Q2.index] 
-SAR.ratio.samples <- (SAR1.samples / SAR2.samples)
+SAR.ratio.samples <- (SAR2.samples / SAR1.samples)
 SAR.ratio.hdi <-  (c(median(SAR.ratio.samples), t(hdi(SAR.ratio.samples, credMass = 0.95))))
 SAR.ratio.hdi
 

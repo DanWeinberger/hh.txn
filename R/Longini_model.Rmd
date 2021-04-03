@@ -1,0 +1,167 @@
+---
+title: "Longini_model"
+author: "Dan Weinberger"
+date: "4/3/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(rjags)
+library(HDInterval)
+library(reshape2)
+set.seed(123456)
+
+source('./generate_simdata_exposuretime_DMW2.R') 
+#source('./generate_line_lists_zelner.R') 
+#ds <- readRDS('../data/data.list.rds')
+```
+
+Setup data from line list to HH transmission model
+```{r}
+
+
+
+#Generate the data and store as a data frame
+hh_list <- lapply(1:1000,gen.hh )
+
+hh_df <- do.call('rbind.data.frame', hh_list)
+
+hh_df_spl <- split(hh_df, hh_df$hhID)
+
+n_people_hh <- sapply(hh_df_spl, function(x){
+   nrow(x)
+})
+
+n_vax_hh <- 
+  sapply(hh_df_spl, function(x){
+   sum(x$vax1dose)
+})
+
+
+n_infected_hh <- sapply(hh_df_spl, function(x) sum(x[,'infected']))
+
+hh_summary <- cbind.data.frame(n_people_hh,n_infected_hh,n_vax_hh)
+
+hh_summary$vax1 <- 0
+
+hh_summary$vax1[hh_summary$n_vax_hh>1] <- 1 
+
+hh_summary$one <- 1
+
+hh_summary.m <- 
+  melt(hh_summary[ ,c('n_people_hh','n_infected_hh','vax1','one')], id.vars=c('n_people_hh','n_infected_hh','vax1'))
+
+ds1 <- 
+  acast(hh_summary.m, n_infected_hh ~ n_people_hh~vax1, fun.aggregate=length)
+
+if(dim(ds1)[[1]] < dim(ds1)[[2]]  ){
+  n.dim.add <- dim(ds1)[[2]] - dim(ds1)[[1]] + 1
+  ds.add <- array(0, dim=c( n.dim.add,dim(ds1)[[2]], dim(ds1)[[3]] ) )
+  ds <- abind(ds1, ds.add, along=c(1))
+}else{
+  ds=ds1
+}
+
+apply(ds,3,sum)
+
+```
+
+```{r}
+max.hh.size <- dim(ds)[[2]]
+
+choose_kj_mat <- matrix(0, nrow=max.hh.size, ncol=max.hh.size)
+for(k in 2: max.hh.size){
+  for(j in 1:k){
+    choose_kj_mat[k,j] <- choose(k,j)
+  }
+}
+```
+
+```{r}
+source('./longini_jags_covariates.R')
+```
+
+
+
+```{r}
+##############################################################
+#Model Fitting
+##############################################################
+inits1=list(".RNG.seed"=c(1234), ".RNG.name"='base::Wichmann-Hill')
+inits2=list(".RNG.seed"=c(4567), ".RNG.name"='base::Wichmann-Hill')
+inits3=list(".RNG.seed"=c(6789), ".RNG.name"='base::Wichmann-Hill')
+##############################################
+#Model Organization
+##############################################
+model_spec<-textConnection(longini_jags_covar)
+model_jags_covar<-jags.model(model_spec, 
+                       inits=list(inits1,inits2, inits3),
+                       data=list( 
+                                 'ds'=ds,
+                                 'max.hh.size'=dim(ds)[2],
+                                 'n.hh'= apply(ds,c(2,3),sum),
+                                 'choose_kj_mat'=choose_kj_mat
+                                 ),
+                       n.adapt=10000, 
+                       n.chains=3)
+```
+
+```{r}
+params<-c('B','Q', 'beta1','delta1','alpha1','alpha2')
+##############################################
+#Posterior Sampling
+##############################################
+posterior_samples_covar<-coda.samples(model_jags_covar, 
+                                params, 
+                                n.iter=10000)
+posterior_samples.covar.all<-do.call(rbind,posterior_samples_covar)
+post_median<-apply(posterior_samples.covar.all, 2, median)
+sample.labs<-names(post_median)
+ci<-t(hdi(posterior_samples.covar.all, credMass = 0.95))
+ci <- cbind(post_median,ci)
+row.names(ci)<-sample.labs
+names(post_median)<-sample.labs
+B1.index <- grep('B[1]',sample.labs, fixed=T)
+B2.index <- grep('B[2]',sample.labs, fixed=T)
+Q1.index <- grep('Q[1]',sample.labs, fixed=T)
+Q2.index <- grep('Q[2]',sample.labs, fixed=T)
+beta1.index <- grep('beta1', sample.labs, fixed=T)
+
+CPI1.mcmc <- 1- ci[B1.index,]
+CPI2.mcmc <- 1- ci[B2.index,]
+SAR1.mcmc <- 1-ci[Q1.index,]
+SAR2.mcmc <- 1-ci[Q2.index,]
+beta1.mcmc <- 1-ci[beta1.index,]
+
+CPI1.mcmc
+SAR1.mcmc
+
+#Ratio of CPI for HH with and without vax 
+CPI1.samples <- 1 - posterior_samples.covar.all[,B1.index]
+CPI2.samples <- 1 - posterior_samples.covar.all[,B2.index]
+#CPI.log.ratio.samples <- log(CPI1.samples / CPI2.samples)
+CPI.ratio.samples <- CPI1.samples / CPI2.samples
+##Equal tailed interval ives same result if use log or original scale
+quantile(CPI.ratio.samples, probs=c(0.025,0.5,0.975))
+#exp(quantile(CPI.log.ratio.samples, probs=c(0.025,0.5,0.975)) )
+CPI.ratio.hdi <-  c(median(CPI.ratio.samples), t(hdi(CPI.ratio.samples, credMass = 0.95)))
+CPI.ratio.hdi 
+1 - mean(CPI.ratio.samples>1) #1 - Probability RR>1
+
+#CPI.ratio.hdi_log_exp
+#Ratio of SAR for HH with and without kids 
+SAR1.samples <- 1 - posterior_samples.covar.all[,Q1.index]
+SAR2.samples <- 1 - posterior_samples.covar.all[,Q2.index] 
+SAR.ratio.samples <- (SAR1.samples / SAR2.samples)
+SAR.ratio.hdi <-  (c(median(SAR.ratio.samples), t(hdi(SAR.ratio.samples, credMass = 0.95))))
+SAR.ratio.hdi
+
+mean(SAR.ratio.samples<1)
+```
+
+
+

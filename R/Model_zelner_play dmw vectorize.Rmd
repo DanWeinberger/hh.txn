@@ -21,6 +21,8 @@ hh_df_rep$iter <- rep(1:N.samples, each = nrow(hh_df))
 
 
 
+
+
 ## d_jk(t) definition -- this first part can be computed out of JAGS
 
 ```{r}

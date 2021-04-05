@@ -19,7 +19,7 @@ library(reshape2)
 library(pbapply)
 set.seed(123456)
 
-source('./generate_simdata_exposuretime_DMW2.R') 
+source('./generate_simdata_exposuretime_DMW2_troubleshoot.R') 
 #source('./generate_line_lists_zelner.R') 
 #ds <- readRDS('../data/data.list.rds')
 ```
@@ -28,7 +28,7 @@ Setup data from line list to HH transmission model
 ```{r}
 
 #Generate the data and store as a data frame
-hh_list <- pblapply(1:5000,gen.hh )
+hh_list <- pblapply(1:1000,gen.hh )
 
 hh_df <- do.call('rbind.data.frame', hh_list)
 
@@ -74,6 +74,8 @@ vax.prop <- apply(ds[,,2] , 2, function(x) x/sum(x, na.rm=T))
 unvax.prop <- apply(ds[,,1] , 2, function(x) x/sum(x, na.rm=T)) 
 
 irr.crude <- vax.prop/unvax.prop
+
+
 
 ```
 
@@ -147,9 +149,6 @@ SAR1.mcmc <- 1-ci[Q1.index,]
 SAR2.mcmc <- 1-ci[Q2.index,]
 beta1.mcmc <- 1-ci[beta1.index,]
 
-CPI1.mcmc
-SAR1.mcmc
-
 #Ratio of CPI for HH with and without vax 
 CPI1.samples <- 1 - posterior_samples.covar.all[,B1.index]
 CPI2.samples <- 1 - posterior_samples.covar.all[,B2.index]
@@ -170,8 +169,64 @@ SAR.ratio.samples <- (SAR2.samples / SAR1.samples)
 SAR.ratio.hdi <-  (c(median(SAR.ratio.samples), t(hdi(SAR.ratio.samples, credMass = 0.95))))
 SAR.ratio.hdi
 
-mean(SAR.ratio.samples<1)
+#mean(SAR.ratio.samples<1)
 ```
 
+## Try model WITHOUT covariates; just looking at households without vaccine
+```{r}
+source('./longini_jags.R')
+ds.combo <- apply(ds,c(1,2), sum)
+
+CPI1 = 83/(83+131)  #Prob infection in HH size=1 m[2,1]
+b.emp <- 1-CPI1 #Empirical estimate of B
+
+CPI2 <- 1- (1-CPI1)^2 #Probability of community infection in HH size 2
+Prob.uninf.comm2 <- 1-CPI2 #probability of no community infection in HH2
+
+SAR2.empir = 137/(137+393) 
+prob.uninf.empir2 <- 1-SAR2.empir 
+
+
+(prob.uninf.empir2) /  (1 - CPI2)
+
+
+##############################################
+#Model Organization
+##############################################
+model_spec<-textConnection(longini_jags)
+model_jags_covar<-jags.model(model_spec, 
+                       inits=list(inits1,inits2, inits3),
+                       data=list( 
+                                 'ds'=ds.combo,
+                                 'max.hh.size'=dim(ds.combo)[2],
+                                 'n.hh'= apply(ds.combo,c(2),sum),
+                                 'choose_kj_mat'=choose_kj_mat
+                                 ),
+                       n.adapt=10000, 
+                       n.chains=3)
+params<-c('B','Q')
+##############################################
+#Posterior Sampling
+##############################################
+posterior_samples_covar<-coda.samples(model_jags_covar, 
+                                params, 
+                                n.iter=10000)
+
+posterior_samples.covar.all<-do.call(rbind,posterior_samples_covar)
+post_median<-apply(posterior_samples.covar.all, 2, median)
+sample.labs<-names(post_median)
+ci<-t(hdi(posterior_samples.covar.all, credMass = 0.95))
+ci <- cbind(post_median,ci)
+row.names(ci)<-sample.labs
+names(post_median)<-sample.labs
+B.index <- grep('B',sample.labs, fixed=T)
+Q.index <- grep('Q',sample.labs, fixed=T)
+
+CPI1.mcmc <- 1- ci[B.index,]  #actual = 0.36
+SAR1.mcmc <- 1-ci[Q.index,]
+
+CPI1.mcmc
+SAR1.mcmc
+```
 
 

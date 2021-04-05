@@ -24,7 +24,9 @@ model{
     m[1,k,v] = B[v]^k # Probability everyone in HH escapes infection from the community 
     
     for (j in 1:(k-1)){
-        m[j+1,k,v] = choose_kj_mat[k,j]*m[j+1,j, v]*(B[v]^(k-j))*Q[v]^(j*(k-j)) # Probabilty j out of k HH members infected
+       m[j+1,k,v] = choose_kj_mat[k,j]*m[j+1,j, v]*(B[v]^(k-j))*Q[v]^(j*(k-j)) # Probabilty j out of k HH members infected
+       #m[j+1,k,v] = choose_kj_mat[k,j]*(B[v]^(k-j))*Q[v]^(j*(k-j)) # Probabilty j out of k HH members infected
+
     }
   
      m[k+1,k,v] = 1-sum(m[1:k,k,v]) #Probability that everyone in HH infected

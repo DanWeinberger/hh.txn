@@ -1,16 +1,16 @@
 ###Simulate  people
 
 #Let's say we expect 20% of households to have a case; 80% without case
-#0.95 = p_no_infect^21; p_no_infect=0.998
+#0.95 = (p_no_infect^(21*5); p_no_infect=0.9995
 
-#0.85 = (p_no_infect^5)^5; p_no_infect=0.9935  duration 5 days
+#0.85 = (p_no_infect^(5); p_no_infect=0.968  duration 5 days
 
 
 # 
-gen.hh <- function(idN, CPI=(1-0.998), prob.trans.day=(1-0.9935), prop.vax1=0.5, prop.vax2=0.5, irr.vax=1, IRR.comm=1){
+gen.hh <- function(idN, CPI=(1-0.9995), prob.trans.day=(1-0.968), prop.vax1=0.5, prop.vax2=0.5, irr.vax=1, IRR.comm=1){
   
   
-  HH.size <- min(1+ rpois(n=1,1.5),2) #cap at 2
+  HH.size <- min(1+ rpois(n=1,1.5),5) #cap at 5
   df1 <- as.data.frame(matrix(NA, nrow=HH.size, ncol=2))
   names(df1) <- c('ID', 'hhID')
   df1$hhID <- idN
@@ -35,9 +35,9 @@ gen.hh <- function(idN, CPI=(1-0.998), prob.trans.day=(1-0.9935), prop.vax1=0.5,
   expose.dist= rgamma(length(df1$ID),4,  0.75) #duration latent
   infect.dist= rgamma(length(df1$ID),4, 0.75) #duration infectiousness
 
-  exposed.status <- matrix(NA, nrow=nrow(df1), ncol=100)
-  infect.status <- matrix(NA, nrow=nrow(df1), ncol=100)
-  n.infect.prev <- matrix(NA, nrow=nrow(df1), ncol=100)
+  exposed.status <- matrix(NA, nrow=nrow(df1), ncol=200)
+  infect.status <- matrix(NA, nrow=nrow(df1), ncol=200)
+  n.infect.prev <- matrix(NA, nrow=nrow(df1), ncol=200)
   
   #exposed.status[,1] <- df1$index*rbinom(nrow(df1),1, CPI*IRR.comm^(df1$vax1dose)) #10% chance that a tested index is positive 
   infect.status[,1] <- 0
@@ -68,10 +68,17 @@ gen.hh <- function(idN, CPI=(1-0.998), prob.trans.day=(1-0.9935), prop.vax1=0.5,
   } 
   
   ##Assume that get PCR on day 1 of being infectious #(2 days asymptomatic transmission)
+  if(sum(day.expose.start)>0){
+    earliest.expose.hh <- min(day.expose.start[day.expose.start>0])
+  } else{
+    earliest.expose.hh <- 1
+  }
+  latest.expose.hh <- min((earliest.expose.hh+20),ncol(exposed.status))
+  
   df1$day.test <- day.infect.start 
   df1$date.test <- as.Date('2021-01-01') # + df1$day.test
   df1$day_index <- as.numeric(df1$date.test - min(df1$date.test)) 
-  df1$infected <- apply(infect.status,1,max)
+  df1$infected <- apply(exposed.status[,earliest.expose.hh:latest.expose.hh, drop=F],1,max) #Only count infections if they were exposed within 21 days of first exposure in HH
   return(df1)
   
 }

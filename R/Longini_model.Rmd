@@ -177,7 +177,7 @@ SAR.ratio.hdi
 source('./longini_jags.R')
 ds.combo <- apply(ds,c(1,2), sum)
 
-CPI1 = 83/(83+131)  #Prob infection in HH size=1 m[2,1]
+CPI1 = 20/(207+20)  #Prob infection in HH size=1 m[2,1]
 b.emp <- 1-CPI1 #Empirical estimate of B
 
 CPI2 <- 1- (1-CPI1)^2 #Probability of community infection in HH size 2

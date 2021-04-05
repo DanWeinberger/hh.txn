@@ -17,6 +17,9 @@ library(rjags)
 library(HDInterval)
 library(reshape2)
 library(pbapply)
+require(rstan)
+require(readr)
+
 set.seed(123456)
 
 source('./generate_simdata_exposuretime_DMW2_troubleshoot.R') 
@@ -28,7 +31,7 @@ Setup data from line list to HH transmission model
 ```{r}
 
 #Generate the data and store as a data frame
-hh_list <- pblapply(1:1000,gen.hh )
+hh_list <- pblapply(1:1000,gen.hh, irr.vax=1, IRR.comm=1 )
 
 hh_df <- do.call('rbind.data.frame', hh_list)
 
@@ -169,7 +172,7 @@ SAR.ratio.samples <- (SAR2.samples / SAR1.samples)
 SAR.ratio.hdi <-  (c(median(SAR.ratio.samples), t(hdi(SAR.ratio.samples, credMass = 0.95))))
 SAR.ratio.hdi
 
-#mean(SAR.ratio.samples<1)
+#1 - mean(SAR.ratio.samples<1)
 ```
 
 ## Try model WITHOUT covariates; just looking at households without vaccine
@@ -227,6 +230,11 @@ SAR1.mcmc <- 1-ci[Q.index,]
 
 CPI1.mcmc
 SAR1.mcmc
+```
+
+
+```{r}
+ds.combo
 ```
 
 

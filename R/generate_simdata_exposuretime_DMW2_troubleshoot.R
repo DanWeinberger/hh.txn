@@ -30,6 +30,10 @@ gen.hh <- function(idN, CPI=(1-0.9995), prob.trans.day=(1-0.968), prop.vax1=0.5,
   rand1 <- runif(nrow(df1))
   
   df1$index <- 1*(rand1==min(rand1))
+  prob.uninf.day.comm <- 1 - CPI * irr.vax^df1$vax1dose 
+  prob.infect.day <- prob.trans.day * irr.vax^df1$vax1dose   #prob of being infected per day, per exposure,
+  prob.uninfect.day <- 1 - prob.infect.day
+  
 
   #These are time distributions that specify for the person if they are infected, how much time to add before infectious, and ow long infectious
   expose.dist= rgamma(length(df1$ID),4,  0.75) #duration latent
@@ -44,11 +48,7 @@ gen.hh <- function(idN, CPI=(1-0.9995), prob.trans.day=(1-0.968), prop.vax1=0.5,
   n.infect.prev[,1] <- 0
   exposed.status[,1] <- 1 - rbinom(nrow(df1), 1, prob.uninf.day.comm )  #exponent ensure once you are exposed, you stay in that category
   
-  prob.infect.day <- prob.trans.day * irr.vax^df1$vax1dose   #prob of being infected per day, per exposure,
-  prob.uninfect.day <- 1 - prob.infect.day
-  
-  prob.uninf.day.comm <- 1 - CPI * irr.vax^df1$vax1dose 
-  
+
   for( i in 2:ncol(infect.status)){
     day.exposed <- apply(exposed.status,1, function(x) which(x==1)[1])
     day.exposed[is.na(day.exposed)] <- 0

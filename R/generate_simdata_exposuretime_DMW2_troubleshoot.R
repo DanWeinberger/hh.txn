@@ -39,15 +39,15 @@ gen.hh <- function(idN, CPI=(1-0.9995), prob.trans.day=(1-0.968), prop.vax1=0.5,
   infect.status <- matrix(NA, nrow=nrow(df1), ncol=200)
   n.infect.prev <- matrix(NA, nrow=nrow(df1), ncol=200)
   
+  prob.infect.day <- prob.trans.day * irr.vax^df1$vax1dose   #prob of being infected per day, per exposure,
+  prob.uninfect.day <- 1 - prob.infect.day
+  prob.uninf.day.comm <- 1 - CPI * irr.vax^df1$vax1dose 
+  
   #exposed.status[,1] <- df1$index*rbinom(nrow(df1),1, CPI*IRR.comm^(df1$vax1dose)) #10% chance that a tested index is positive 
   infect.status[,1] <- 0
   n.infect.prev[,1] <- 0
   exposed.status[,1] <- 1 - rbinom(nrow(df1), 1, prob.uninf.day.comm )  #exponent ensure once you are exposed, you stay in that category
   
-  prob.infect.day <- prob.trans.day * irr.vax^df1$vax1dose   #prob of being infected per day, per exposure,
-  prob.uninfect.day <- 1 - prob.infect.day
-  
-  prob.uninf.day.comm <- 1 - CPI * irr.vax^df1$vax1dose 
   
   for( i in 2:ncol(infect.status)){
     day.exposed <- apply(exposed.status,1, function(x) which(x==1)[1])

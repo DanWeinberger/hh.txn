@@ -1,5 +1,5 @@
 ###Simulate  people
-gen.hh <- function(idN,  prob.trans.day=0.025, prop.vax1=0.5, prop.vax2=0.5, irr.vax=0.2, IRR.comm=1){
+gen.hh <- function(idN, CPI=0, prob.trans.day=0.025, prop.vax1=0.5, prop.vax2=0.5, irr.vax=0.2, IRR.comm=1){
   
   HH.size <- min(1+ rpois(n=1,1.5),5) #cap at 5
   df1 <- as.data.frame(matrix(NA, nrow=HH.size, ncol=2))
@@ -25,7 +25,7 @@ gen.hh <- function(idN,  prob.trans.day=0.025, prop.vax1=0.5, prop.vax2=0.5, irr
   #These are time distributions that specify for the person if they are infected, how much time to add before infectious, and ow long infectious
   expose.dist= rgamma(length(df1$ID),4,  0.75) #duration latent
   infect.dist= rgamma(length(df1$ID),4, 0.75) #duration infectiousness
-  
+
   exposed.status <- matrix(NA, nrow=nrow(df1), ncol=40)
   infect.status <- matrix(NA, nrow=nrow(df1), ncol=40)
   n.infect.prev <- matrix(NA, nrow=nrow(df1), ncol=40)
@@ -37,6 +37,8 @@ gen.hh <- function(idN,  prob.trans.day=0.025, prop.vax1=0.5, prop.vax2=0.5, irr
   prob.infect.day <- prob.trans.day * irr.vax^df1$vax1dose   #prob of being infected per day, per exposure,
   prob.uninfect.day <- 1 - prob.infect.day
   
+  prob.uninf.day.comm <- 1 - CPI * irr.vax^df1$vax1dose 
+
   for( i in 2:40){
     day.exposed <- apply(exposed.status,1, function(x) which(x==1)[1])
     day.exposed[is.na(day.exposed)] <- 0
@@ -46,7 +48,7 @@ gen.hh <- function(idN,  prob.trans.day=0.025, prop.vax1=0.5, prop.vax2=0.5, irr
     
     n.infect.prev[,i] <- sum(infect.status[,(i-1)]) #how many people in HH were infectious at previous time?
     
-    exposed.status[,i] <- (1-rbinom(nrow(df1), 1, prob.uninfect.day^n.infect.prev[,i] )) ^ (1- exposed.status[,(i-1)]) #exponent ensure once you are exposed, you stay in that category
+    exposed.status[,i] <- (1-rbinom(nrow(df1), 1, prob.uninf.day.comm*prob.uninfect.day^n.infect.prev[,i] )) ^ (1- exposed.status[,(i-1)]) #exponent ensure once you are exposed, you stay in that category
     
     infect.status[,i]  <- ((i - day.infect.start) <= infect.dist) * ((i - day.exposed ) > expose.dist)  #You are infectious for days in specified range
   } 

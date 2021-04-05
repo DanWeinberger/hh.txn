@@ -43,7 +43,7 @@ for(i in 1:N.obs){
     prob_inf[i,j] <- prob_uninf_to_timej[i,j]* prob_inf_timej[i,j]
     like[i,j] <- y2[i,j]*prob_uninf[i,j] + (1-y2[i,j])*prob_inf[i,j]+ 1e-6  
   }  
-}
+
 
 delta0 ~dnorm(0,1e-4) 
 alpha0 ~dnorm(0,1e-4)

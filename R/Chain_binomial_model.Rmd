@@ -7,6 +7,7 @@ obs[81]
 ```{r}
 library(rjags)
 library(HDInterval)
+library(reshape2)
 source('./generate_simdata_exposuretime_DMW2.R') 
 #source('./generate_line_lists_zelner.R') 
 #ds <- readRDS('../data/data.list.rds')
@@ -14,12 +15,26 @@ source('./generate_simdata_exposuretime_DMW2.R')
 
 
 ```{r}
-N.samples <- 1000
+#Generate the data and store as a data frame
+hh_list <- lapply(1:100,gen.hh )
+hh_df <- do.call('rbind.data.frame', hh_list)
+
+hh_df.m <- melt(hh_df[,c('day_index','hhID','ID','infected','vax1dose')], id.vars=c('hhID','ID'))
+
+hh_df.c <- acast(hh_df.m, hhID~ ID ~variable )
+
+day.matrix <- hh_df.c[,,'day_index']
+infected_matrix <- hh_df.c[,,'infected']
+vax <- hh_df.c[,,'vax1dose']
+#vax1dose <- hh_df.c[,,'vax1dose']
+#vax2dose <- hh_df.c[,,'vax2dose']
+N.hh.members <- apply(infected_matrix,1,function(x) sum(!is.na(x)))
+N.HH <- nrow(infected_matrix)
+N.cases.hh <- apply(infected_matrix,1,sum, na.rm=T)
+N.samples <- 5000
 hh_df_rep <- hh_df[rep(1:nrow(hh_df), times = N.samples),]
 hh_df_rep$iter <- rep(1:N.samples, each = nrow(hh_df))
 ```
-
-
 
 
 
@@ -31,36 +46,40 @@ hh_df_rep$iter <- rep(1:N.samples, each = nrow(hh_df))
 ## Define latent distributions
 # Hyperpriors for the latent distributions
 # parameterized by mode (m) and standard deviation (sd):
-m1 <- runif(nrow(hh_df_rep),2,6)
-sd1 <- runif(nrow(hh_df_rep),2,3) 
-ra1 <- ( m1 + sqrt( m1^2 + 4*sd1^2 ) ) / ( 2 * sd1^2 )
-sh1 <- 1 + m1 * ra1
+#m1 <- runif(nrow(hh_df_rep),2,6)
+#sd1 <- runif(nrow(hh_df_rep),2,3) 
+#ra1 <- ( m1 + sqrt( m1^2 + 4*sd1^2 ) ) / ( 2 * sd1^2 )
+#sh1 <- 1 + m1 * ra1
 
-m2 <- runif(nrow(hh_df_rep), 2,6)
-sd2 <- runif(nrow(hh_df_rep),2,3)
-ra2 <- ( m2 + sqrt( m2^2 + 4*sd2^2 ) ) / ( 2 * sd2^2 )
-sh2 <- 1 + m2 * ra2
+#m2 <- runif(nrow(hh_df_rep), 2,6)
+#sd2 <- runif(nrow(hh_df_rep),2,3)
+#ra2 <- ( m2 + sqrt( m2^2 + 4*sd2^2 ) ) / ( 2 * sd2^2 )
+#sh2 <- 1 + m2 * ra2
 
-m3 <- runif(nrow(hh_df_rep),2,6) #days
-sd3 <- runif(nrow(hh_df_rep),2,3) #SD on days
-ra3 <- ( m3 + sqrt( m3^2 + 4*sd3^2 ) ) / ( 2 * sd3^2 )
-sh3 <- 1 + m3 * ra3
+#m3 <- runif(nrow(hh_df_rep),2,6) #days
+#sd3 <- runif(nrow(hh_df_rep),2,3) #SD on days
+#ra3 <- ( m3 + sqrt( m3^2 + 4*sd3^2 ) ) / ( 2 * sd3^2 )
+#sh3 <- 1 + m3 * ra3
 
 
-   #Generate random draws for duration of infectious, 
-    n.sim <- nrow(hh_df_rep)
+#Generate random draws for duration of infectious, 
+  n.sim <- nrow(hh_df_rep)
+  hh_df_rep$expose.dist= rgamma(n.sim,4,  0.75) #duration latent
+  hh_df_rep$infect.dist= rgamma(n.sim,4, 0.75) #duration infectiousness
+  hh_df_rep$end.inf= rgamma(n.sim,4, 0.75) #duration infectiousness
+
     
-    hh_df_rep$infect.dist <- rgamma(n.sim,sh1, ra1) #duration infectiousness (actually is duration of time from infectiousness to test)
+    #hh_df_rep$infect.dist <- rgamma(n.sim,sh1, ra1) #duration infectiousness (actually is duration of time from infectiousness to test)
     
-    hh_df_rep$expose.dist <- rgamma(n.sim,sh2, ra2)
+    #hh_df_rep$expose.dist <- rgamma(n.sim,sh2, ra2)
     
-    hh_df_rep$end.inf <- rgamma(n.sim,sh3,ra3)
+    #hh_df_rep$end.inf <- rgamma(n.sim,sh3,ra3)
     
-    hh_df_rep.spl <- split(hh_df_rep, paste0(hh_df_rep$iter,hh_df_rep$hhID))
+  hh_df_rep.spl <- split(hh_df_rep, paste0(hh_df_rep$iter,hh_df_rep$hhID))
     
-    hh_df_rep.spl <- lapply(hh_df_rep.spl, function(x){
+  hh_df_rep.spl <- lapply(hh_df_rep.spl, function(x){
            x$day.infectious1 <- round(x$day_index - x$infect.dist)
-           x$day.exposed1 <- round(x$day.infectious - x$expose.dist)
+           x$day.exposed1 <- round(x$day.infectious - x$expose.dist)+1
            x$day.infectious.end1 <-  round(x$day.infectious + x$end.inf)
            x$first.day.hh <- min(x$day.exposed, na.rm=T) - 1
            x$last.day.hh <- max(x$day.infectious.end, na.rm=T)
@@ -70,26 +89,28 @@ sh3 <- 1 + m3 * ra3
            x$day.infectious.end <- x$day.infectious.end1 - x$first.day.hh
            x$max.time.hh <- max(x$day.infectious.end, na.rm=T)
           return(x)
-    } )
+  } )
     
-    hh_df_rep.spl[[1]] #check
-    hh_df_rep.spl[[2]] #check
+  hh_df_rep.spl[[1]] #check
+  hh_df_rep.spl[[2]] #check
 
-    hh_df_rep <- do.call('rbind.data.frame', hh_df_rep.spl)
+  hh_df_rep <- do.call('rbind.data.frame', hh_df_rep.spl)
     
     #Then reshape slightly for JAGS
-    hh_df_rep.m <- melt(hh_df_rep[,c('infected','max.time.hh','day.infectious','day.exposed','day.infectious.end','iter','ID','hhID',"vax1dose","vax2dose")],id.vars=c('ID','hhID','iter'))
+  hh_df_rep.m <- melt(hh_df_rep[,c('infected','max.time.hh','day.infectious','day.exposed','day.infectious.end','iter','ID','hhID',"vax1dose","vax2dose")],id.vars=c('ID','hhID','iter'))
     
-    hh_df_rep.c <- acast(hh_df_rep.m, variable ~  ID+hhID ~ iter  ) 
+  hh_df_rep.c <- acast(hh_df_rep.m, variable ~  ID+hhID ~ iter  ) 
     
 
-    hh_df_rep.c <- acast(hh_df_rep.m, variable ~  ID ~ hhID ~ iter  ) 
+  hh_df_rep.c <- acast(hh_df_rep.m, variable ~  ID ~ hhID ~ iter  ) 
 
         
 ```
+
+
 Read in model
 ```{r}
-source('../model/chain_binomial_test_separate_vectorize.R')
+source('../model/chain_binomial_test_separate.R')
 ```
 
 ```{r}
@@ -108,22 +129,19 @@ inits3=list(".RNG.seed"=c(789), ".RNG.name"='base::Wichmann-Hill')
 model_spec<-textConnection(chain_binomial_jags)
 model_jags<-jags.model(model_spec, 
                        #inits=list(inits1,inits2, inits3),
-                       inits=list(inits1),
-
-                                 data=list('N.obs'=dim(hh_df_rep.c)[[2]],
+                       inits=list(inits1),                                           
+                       data=list('N.HH'=nrow(infected_matrix),                                                                               'N.hh.members'= N.hh.members,
                                  'vaxdose1'=hh_df_rep.c['vax1dose',,,1],                                   
                                    'day.infectious'=hh_df_rep.c['day.infectious',,,],
                                  
-                                 'day.exposed'=hh_df_rep.c['day.exposed',,,],
-                                                                  'day.infectious.end'=hh_df_rep.c['day.infectious.end',,,],
-                                 'y' = (1-hh_df_rep.c['infected',,,1]),
-                                 'y2' = (1-hh_df_rep.c['infected',,,1]),
-                                                                  'selecter1'=1,
+                                 'day.exposed'=hh_df_rep.c['day.exposed',,,]+1,
+                                                                    'day.infectious.end'=hh_df_rep.c['day.infectious.end',,,],
+                                 'y' = t(1-hh_df_rep.c['infected',,,1]),
+                                 'y2' = t(1-hh_df_rep.c['infected',,,1]),
+                                 'selecter1'=1,
                                  'time.study.HH'=hh_df_rep.c['max.time.hh',,,]
-                                 #'tmax'=apply(day.matrix,1,max,na.rm=T)
                                  ),
-                       n.adapt=10000, 
-                       
+                       n.adapt=10000,
                        n.chains=1)
 
 ```

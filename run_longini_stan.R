@@ -75,4 +75,4 @@ m <- stan("./R/longini_stan.stan",
           iter = 2000,
           chains = 2,
           sample_file = "testtraces.csv",
-          data = data_in)
+          data = data_in, cores=2)

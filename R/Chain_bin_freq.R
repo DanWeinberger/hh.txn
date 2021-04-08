@@ -3,6 +3,8 @@ library(matrixStats)
 library(reshape2)
 library(data.table)
 source('./R/simulate_data.R')
+source('./R/delay_dist_sim.R')
+
 #### Likelihood definition for all HH
 
 
@@ -14,99 +16,71 @@ kappa=0.5
 params <- c(alpha0,delta0,beta,kappa)
 
 #Generate the data and store as a data frame
-list_hh <-lapply(1:10,gen.hh)
-hh_list <- lapply(list_hh,function(x) x=x$df1)
-infect.status <- lapply(list_hh,function(x) x=x$infect.status)
-delay.dist <- lapply(hh_list, function(x) delay_dist_sim(x))
-N.HH <- length(hh_list)
-max.time.hh.final <- list()
-y_hh <- list()
-delta_hh <- list()
-X_hh <- list()
+sim.data.ls <- lapply(1:10,gen.hh)
 
-## Select one HH
-for(i in 1:N.HH){
-  df1 <- hh_list[[i]]
-  infect.status_hh <- infect.status[[i]]
+df1.ls <- lapply(sim.data.ls, delay_dist_sim)
 
-  #### Define delay distributions and max.time.hh
-  delay.dist.hh <- delay_dist_sim(df1)
-  max.time.hh <- delay.dist.hh$max.time.hh
-  max.time.hh.final[[i]] <- max.time.hh
-  infect.status_hh <- as.matrix(infect.status_hh[,1:max.time.hh]) ## to avoid that there are infected people after time.study.hh -> this would create
-  ### issues with y definition
-  day.infectious <- delay.dist.hh$day.infectious
-  day.exposed <- delay.dist.hh$day.exposed
-  day.infectious.end <- delay.dist.hh$day.infectious.end
+df1 <- do.call('rbind.data.frame',df1.ls)
+
+#keep just variables we need
+df1b <- df1[, c('ID','hhID','vax1dose','vax2dose','infected','day.exposed','day.infectious.end','day.infectious','max.time.hh')]
+
+### Create a  copy of df1 and call it df2
+df2 <- df1b
+
+### Rename all of the variables on df2 as HHID_b, ID_b, Vax_dose1b
+colnames(df2) <- paste(colnames(df2), 'b', sep='_')
+
+### Merge df1 and df2 by HHID; name this df3 
+df3 <- merge(df1b,df2,by.y='hhID_b' , by.x='hhID')
+
+df3$expand.t <- NA
+df3$expand.t[df3$infected==0] <- df3$max.time.hh[df3$infected==0] #censor uninfected person at max.time.hh
+df3$expand.t[df3$infected==1] <- df3$day.exposed[df3$infected==1] #censor infected person at (latent) day of exposure
+
+df3$rowN <- 1:nrow(df3)
+df.t <- df3[rep(df3$rowN, times=df3$expand.t),] #expands the df to number of time points
+
+#Add an index for each person
+df.t$t.index <- unlist(lapply(df3$expand.t, function(x){ 
+  z <- 1:x 
+  return(z)
+  }))
+
+# keep rows where the time index is within range of the infectious period for person b;
+# or where ID_a==ID_b (community risk)
+df.t$keep <- (df.t$ID == df.t$ID_b) | 
+  (
+    (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b) &
+    (df.t$t.index <= df.t$day.exposed)  
+  )
+
+df4 <- df.t[df.t$keep==1,]
+
+#Create elements for design matrix
+df4$delta0 <- 0
+df4$delta0[(df4$ID == df4$ID_b)] <- 1 #exogenous/community risk 
+
+df4$alpha0 <- 0
+df4$alpha0[df4$ID != df4$ID_b ] <- 1
+
+df4$vax1 <- df4$vax1dose
+
+df4$vax2 <- df4$vax1dose_b
+df4$vax2[df4$alpha0==0] <- 0
+
+#HMM is this right? seems like we could double-count Y=1 for certain contact pairs?
+
+df4$Y <- df4$infected*(df4$day.exposed==df4$t.index)
+
+#Design matrix
+X <- df4[c('alpha0','delta0','vax1','vax2')]
+
+Y <- df4$infected
+
+
+
   
-  #### Definition of delta
-  delta <- array(NA,dim=c(nrow(df1)+1,nrow(df1)+1,max.time.hh))
-  ### delta is equal to 1 for the first row referring to baseline risk contribution
-  delta[1,2:(nrow(df1)+1),]<- 1
-  for(j in 2:(nrow(df1)+1)){
-    for(t in 1:max.time.hh){
-      for(k in 2:(nrow(df1)+1)){
-        delta[j,k,t] <-ifelse(k!=j,1,0)*ifelse(t > day.infectious[k-1],1,0)*ifelse(t < min(day.exposed[j-1], day.infectious.end[k-1]),1,0)
-      }
-    }
-  }
-  delta_hh[[i]] <- delta
-  
-  #### Define observed data y which depend on max.time.hh and infect.status
-  y <- matrix(NA,nrow=max.time.hh,ncol=nrow(df1))
-  #infect.status <- infect.status[[i]]
-  for(l in 1:nrow(df1)){
-    if(max(infect.status_hh[l,])!=0){
-    #y[1:min(0,which(infect.status_hh[l,]==1))-1,l]=0
-    #y[min(0,which(infect.status_hh[l,]==1)),l]=1
-      y[1:min(which(infect.status_hh[l,]==1))-1,l]=0
-      y[min(which(infect.status_hh[l,]==1)),l]=1
-    }else{
-     y[1:nrow(y),l] <- 0    
-    }  
-  }
-  y_hh[[i]] <- y
-  ### Manipulated dfs to extract values for the design matrix X
-  
-  ### Preprocessing the data: creating y, X and call to delay distributions
-  
-  ### Create a  copy of df1 and call it df2
-  df1 <- hh_list[[i]]
-  df2 <- copy(df1)
-  ### Rename all of the variables on df1 as HHID_b, ID_b, Vax_dose1b
-  colnames(df1) <- paste(colnames(df1), 'b', sep='_')
-  colnames(df1)[2] <- 'hhID'
-  ### Merge df1 and df2 by HHID; name this df3 
-  df3 <- merge(df1,df2,by='hhID')
-  vax <- (df3[df3$ID!=df3$ID_b,]$vax1dose)
-  
-  
-  #### Maybe there is a more efficient way of doing so
-  #index <- unlist(df1$ID)
-  #vax <- list()
-  #for(m in 1:nrow(df1)){
-  #  if(m==index[m]){
-  #    index1 = index[-m]
-  #    vax[[m]] <- df1[df1$ID %in% index1, ]$vax1dose
-  #  }
-  #}
-  #vax <- unlist(vax)
-  
-  
-  ### Define the design matrix: first two rows refer to the exogenous contribution, last two to the endogenous contribution
-  X = matrix(0, nrow=nrow(df1)^2,ncol=length(params))
-  if(nrow(df1)==1){
-    X[1:nrow(df1),2] <- 1    ## set delta0
-    X[1:nrow(df1),3] <- df1$vax1dose
-  }else{
-    X[(nrow(df1)+1):nrow(X),1] <-1 ## set alpha0
-    X[1:nrow(df1),2] <- 1    ## set delta0
-    X[1:nrow(df1),3] <- df1$vax1dose
-    X[(nrow(df1)+1):nrow(X),3] <-rep(df1$vax1dose,each=(nrow(df1)-1))
-    X[(nrow(df1)+1):nrow(X),4] <- vax 
-  }
-  X_hh[[i]] <- X
-}
 
 chain_bin_lik <- function(params){
   ll=0
@@ -145,30 +119,3 @@ chain_bin_lik <- function(params){
   }
   return(-ll)
 }
-
-
-###  Simulate delay_distributions
-
-delay_dist_sim <- function(df1){
-  n.sim <- nrow(df1)
-  expose.dist= rgamma(n.sim,4,0.75) #duration latent
-  infect.dist= rgamma(n.sim,4,0.75) #duration infectiousness
-  end.inf= rgamma(n.sim,4, 0.75) #duration infectiousness
-  
-  day.infectious <- round(df1$day_index - infect.dist)
-  day.exposed <- round(day.infectious - expose.dist)
-  day.infectious.end <-  round(day.infectious + end.inf)
-  first.day.hh <- min(day.exposed, na.rm=T) - 1
-  last.day.hh <- max(day.infectious.end, na.rm=T)
-  
-  day.infectious <- day.infectious - first.day.hh
-  day.exposed <- day.exposed - first.day.hh
-  day.infectious.end <- day.infectious.end - first.day.hh
-  max.time.hh <- max(day.infectious.end, na.rm=T)
-  
-  res.list <- list('max.time.hh'=max.time.hh,'day.infectious'=day.infectious,'day.exposed'=day.exposed,'day.infectious.end'=day.infectious.end)
-  return(res.list)
-}
-
-
-

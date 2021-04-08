@@ -11,20 +11,9 @@ gen.hh <- function(idN, CPI=(1-0.90), prob.trans.day=(1-0.90), prop.vax1=0.5, pr
   df1$hhID <- idN
   df1$ID <- 1:HH.size
   
-  # df1$date.test <- as.Date(NA)
-  # df1$date.test[1] <- as.Date('2020-12-20')
-  # df1$date.test[2:nrow(df1)] <- df1$date.test[1] + 1 + 21*runif(n=(nrow(df1)-1)) 
-  # 
   
   df1$vax1dose <- rbinom(nrow(df1), 1,prop.vax1)
   df1$vax2dose <- rbinom(nrow(df1), 1,prop.vax2)
-  
-  #Randomly set 1 person as the index
-  ##Might need to modify this so that index is unvaccinated person
-  
-  rand1 <- runif(nrow(df1))
-  
-  df1$index <- 1*(rand1==min(rand1))
   
   #These are time distributions that specify for the person if they are infected, how much time to add before infectious, and ow long infectious
   expose.dist= rgamma(length(df1$ID),4,  0.75) #duration latent
@@ -75,31 +64,7 @@ gen.hh <- function(idN, CPI=(1-0.90), prob.trans.day=(1-0.90), prop.vax1=0.5, pr
   df1$day_index <- as.numeric(df1$date.test - min(df1$date.test)) 
   df1$infected <- apply(exposed.status[,earliest.expose.hh:latest.expose.hh, drop=F],1,max) #Only count infections if they were exposed within 21 days of first exposure in HH
   
-  res.list<-list('df1'=df1,'infect.status'=infect.status)
-  return(res.list)
-}
-
-
-###  Simulate delay_distributions
-
-delay_dist_sim <- function(df1){
-  n.sim <- nrow(df1)
-  expose.dist= rgamma(n.sim,4,0.75) #duration latent
-  infect.dist= rgamma(n.sim,4,0.75) #duration infectiousness
-  end.inf= rgamma(n.sim,4, 0.75) #duration infectiousness
-  
-  day.infectious <- round(df1$day_index - infect.dist)
-  day.exposed <- round(day.infectious - expose.dist)
-  day.infectious.end <-  round(day.infectious + end.inf)
-  first.day.hh <- min(day.exposed, na.rm=T) - 1
-  last.day.hh <- max(day.infectious.end, na.rm=T)
-  
-  day.infectious <- day.infectious - first.day.hh
-  day.exposed <- day.exposed - first.day.hh
-  day.infectious.end <- day.infectious.end - first.day.hh
-  max.time.hh <- max(day.infectious.end, na.rm=T)
-  
-  res.list <- list('max.time.hh'=max.time.hh,'day.infectious'=day.infectious,'day.exposed'=day.exposed,'day.infectious.end'=day.infectious.end)
-  return(res.list)
+  #res.list<-list('df1'=df1)
+  return(df1)
 }
 

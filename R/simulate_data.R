@@ -30,9 +30,9 @@ gen.hh <- function(idN, CPI=(1-0.90), prob.trans.day=(1-0.90), prop.vax1=0.5, pr
   expose.dist= rgamma(length(df1$ID),4,  0.75) #duration latent
   infect.dist= rgamma(length(df1$ID),4, 0.75) #duration infectiousness
   
-  exposed.status <- matrix(NA, nrow=nrow(df1), ncol=40)
-  infect.status <- matrix(NA, nrow=nrow(df1), ncol=40)
-  n.infect.prev <- matrix(NA, nrow=nrow(df1), ncol=40)
+  exposed.status <- matrix(NA, nrow=nrow(df1), ncol=200)
+  infect.status <- matrix(NA, nrow=nrow(df1), ncol=200)
+  n.infect.prev <- matrix(NA, nrow=nrow(df1), ncol=200)
   
   prob.infect.day <- prob.trans.day * irr.vax^df1$vax1dose   #prob of being infected per day, per exposure,
   prob.uninfect.day <- 1 - prob.infect.day
@@ -44,7 +44,7 @@ gen.hh <- function(idN, CPI=(1-0.90), prob.trans.day=(1-0.90), prop.vax1=0.5, pr
   exposed.status[,1] <- 1 - rbinom(nrow(df1), 1, prob.uninf.day.comm )  #exponent ensure once you are exposed, you stay in that category
   
   
-  for( i in 2:40){
+  for( i in 2:ncol(infect.status)){
     day.exposed <- apply(exposed.status,1, function(x) which(x==1)[1])
     day.exposed[is.na(day.exposed)] <- 0
     

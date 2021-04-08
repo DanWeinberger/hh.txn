@@ -56,11 +56,11 @@ delay.gen <- function(input_df){
     
     # keep rows where the time index is within range of the infectious period for person b;
     # or where ID_a==ID_b (community risk)
-    df.t$keep <- (df.t$ID == df.t$ID_b) | 
-      (
-        (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b & df.t$t.index <= df.t$day.exposed) &
-        (df.t$t.index <= df.t$day.exposed)  
-      )
+    if(df.t$ID == df.t$ID_b){ #exogenous
+      df.t$keep <-  T   
+    }else{ #within-HH
+      df.t$keep <- (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b ) 
+    }
     
     df4 <- df.t[df.t$keep==1,]
     
@@ -78,12 +78,14 @@ delay.gen <- function(input_df){
     
     #HMM is this right? seems like we could double-count Y=1 for certain contact pairs?
     
-    df4$Y <- df4$infected*(df4$day.exposed==df4$t.index)
+    df4$infect.at.timet <- df4$infected
+    df4$infect.at.timet[df4$t.index < df4$day.exposed] <- 0
+    Y.df <- aggregate( df4$infect.at.timet, by=list( 'ID'=df4$ID, 'hhID'=df4$hhID, 'tindex'=df4$t.index ), FUN=mean)
     
     #Design matrix
     X <- df4[c('alpha0','delta0','vax1','vax2')]
     
-    Y <-  df4$infected
+    Y <-  Y.df$x
 
   out.list=list('Y'=Y, 'X'=X)    
     return(out.list)
@@ -102,6 +104,8 @@ delay.gen <- function(input_df){
 ##3 Repeat 1-2 N times
 ##4 average of all N
 
+#Need Y to represent each HH and time, from 0 to censor time; 
+#Check that simulated data truncated to 21 days
 
 
 #Note here, we have all time points represented in the df, so the likelihood is very simple--no need to exponentiate stuff  
@@ -111,11 +115,11 @@ chain_bin_lik <- function(params, ID, hhID,t){
     logit_p <- X %*% params
   
   ### Go back to p (probability  of transmission) with inverse logit: 
-    p <- exp(logit_p)/(exp(logit_p) + 1) 
+    q <- 1 - exp(logit_p)/(exp(logit_p) + 1) 
   
     ##Pi needs to be a single value by ID/hhID/time point; Y should be same length
-    p.spl <- split(p, paste(ID, hhID, t))
-    pi <- exp(sapply(p.spl, function(x) sum(log(x))   ))
+    q.spl <- split(q, paste(ID, hhID, t))
+    pi <-  1 - exp(sapply(q.spl, function(x) sum(log(x))   ))
     
   ### Likelihood definition (for the moment no log-lik, so there is just a product over all HH members and time steps):
     ll= sum(dbinom(x=Y,size=1,prob = pi,log = TRUE),na.rm = TRUE)

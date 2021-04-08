@@ -17,7 +17,7 @@ kappa=0.5
 params <- c(alpha0,delta0,beta,kappa)
 
 #Generate the data and store as a data frame
-sim.data.ls <- pblapply(1:10000,gen.hh)
+sim.data.ls <- pblapply(1:2,gen.hh)
 
 #This is like the data we would get from KSM
 sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
@@ -57,11 +57,15 @@ delay.gen <- function(input_df){
     
     # keep rows where the time index is within range of the infectious period for person b;
     # or where ID_a==ID_b (community risk)
-    if(df.t$ID == df.t$ID_b){ #exogenous
-      df.t$keep <-  T   
-    }else{ #within-HH
-      df.t$keep <- (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b ) 
-    }
+    #if(df.t$ID == df.t$ID_b){ #exogenous ## This doesn't work
+     # df.t$keep <-  T   
+    #}else{ #within-HH
+    #  df.t$keep <- (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b ) 
+    #}
+    
+    ### CHECK: 
+    df.t$keep <-  T *ifelse(df.t$ID == df.t$ID_b,1,0)  | (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b )
+
     
     df4 <- df.t[df.t$keep==1,]
     
@@ -83,7 +87,7 @@ delay.gen <- function(input_df){
     df4$infect.at.timet[df4$t.index < df4$day.exposed] <- 0
     Y.df <- aggregate( df4$infect.at.timet, by=list( 'ID'=df4$ID, 'hhID'=df4$hhID, 'tindex'=df4$t.index ), FUN=mean)
     
-    #Design matrix
+    #Design matrix 
     X <- df4[c('alpha0','delta0','vax1','vax2')]
     
     Y <-  Y.df$x
@@ -96,8 +100,9 @@ delay.gen <- function(input_df){
 
 #test1 <- df4[,c('hhID', 'ID','ID_b', 't.index','Y')]
 
+### Test function: 
 
-
+d1 <- gen.hh(1)
 
 ##1. Run delay.gen() to create X and Y for a single set of random delay dist value
 ##2. Run mle() or optim() to estimate parameters
@@ -111,20 +116,24 @@ delay.gen <- function(input_df){
 #Note here, we have all time points represented in the df, so the likelihood is very simple--no need to exponentiate stuff  
 chain_bin_lik <- function(params, ID, hhID,t){
 
-    #### Define logit_p = X*params
-    logit_p <- X %*% params
+    #### Define logit_p = X*params; need  to add as.matrix
+    logit_p <- as.matrix(X) %*% params ## Added as.matrix
   
   ### Go back to p (probability  of transmission) with inverse logit: 
     q <- 1 - exp(logit_p)/(exp(logit_p) + 1) 
   
     ##Pi needs to be a single value by ID/hhID/time point; Y should be same length
-    q.spl <- split(q, paste(ID, hhID, t))
-    pi <-  1 - exp(sapply(q.spl, function(x) sum(log(x))   ))
+    q.spl <- split(q, paste(df4$ID, df4$hhID, df4$t.index))
+    #q.spl <- split(q, paste(ID, hhID, t)) 
+    pi <-  1 - exp(sapply(q.spl,function(x) sum(log(x)))) ## CHECK
     
   ### Likelihood definition (for the moment no log-lik, so there is just a product over all HH members and time steps):
     ll= sum(dbinom(x=Y,size=1,prob = pi,log = TRUE),na.rm = TRUE)
     return(-ll)
   }
 ##
+
+
+
 
 #mod.data <- pbreplicate(10000,delay.gen(sim.data.df))

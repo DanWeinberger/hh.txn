@@ -83,7 +83,7 @@ delay.gen <- function(input_df){
     #Design matrix
     X <- df4[c('alpha0','delta0','vax1','vax2')]
     
-    Y <- 1 - df4$infected
+    Y <-  df4$infected
 
   out.list=list('Y'=Y, 'X'=X)    
     return(out.list)
@@ -91,7 +91,7 @@ delay.gen <- function(input_df){
 
 
 
-delay.gen <- delay.gen(sim.data.df)
+mod.data <- pbreplicate(10000,delay.gen(sim.data.df))
 
 
 #Note here, we have all time points represented in the df, so the likelihood is very simple--no need to exponentiate stuff  
@@ -104,7 +104,7 @@ chain_bin_lik <- function(params){
   ### Go back to p (probability  of transmission) with inverse logit: 
     p <- exp(logit_p)/(exp(logit_p) + 1) 
   
-    pi <- Y *(1-p) + (1-Y)*p
+    pi <- Y *p + (1-Y)*(1-p)
 
     
   ### Likelihood definition (for the moment no log-lik, so there is just a product over all HH members and time steps):

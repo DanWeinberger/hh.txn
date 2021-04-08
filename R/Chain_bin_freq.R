@@ -76,7 +76,7 @@ df4$Y <- df4$infected*(df4$day.exposed==df4$t.index)
 #Design matrix
 X <- df4[c('alpha0','delta0','vax1','vax2')]
 
-Y <- df4$infected
+Y <- 1 - df4$infected
 
 
 
@@ -84,38 +84,17 @@ Y <- df4$infected
 
 chain_bin_lik <- function(params){
   ll=0
-  for(i in 1:N.HH){
-  #### Define logit_p = X*params
-    logit_p <- X_hh[[i]] %*%params
+
+    #### Define logit_p = X*params
+    logit_p <- X %*% params
   
   ### Go back to p (probability  of transmission) with inverse logit: 
     p <- exp(logit_p)/(exp(logit_p) + 1) 
   
-  ### Create matrix (k+1)*(j+1) with 1-p
-    j<-matrix(0,nrow=nrow(delta_hh[[i]]),ncol=nrow(delta_hh[[i]]),byrow=T)
-    j[,1]<-NA
-    diag(j)<-NA
-    j[is.na(j) == 0]<-1-p
-    k <- flatten(j)
-    k[is.na(k)==0]=1-p
-    pe_mat <- matrix(k,nrow=nrow(delta_hh[[i]]),ncol=nrow(delta_hh[[i]]),byrow = T)
-  
-  #### Create delta's: same dimensions as pe_mat. Once delta is created, define for each time step: pi=(1-pe_mat)^(delta)
-    pe_d <- matrix(NA,nrow=nrow(delta_hh[[i]]),ncol=nrow(delta_hh[[i]]))
-    pi <- list()
-    for(t in 1:max.time.hh.final[[i]]){
-    ### define p^d
-      pe_d <- colSums(log(pe_mat^(delta_hh[[i]][,,t])),na.rm = T)
-      pi[[t]] <- 1-exp(pe_d)
-    }
+    pi <- Y *(1-p) + (1-Y)*p
 
-  
-  ### Stack list together
-    pi<-do.call("rbind",pi)
-  
+    
   ### Likelihood definition (for the moment no log-lik, so there is just a product over all HH members and time steps):
-    ll_piece= sum(dbinom(x=y,size=1,prob = pi[,2:ncol(pi)],log = TRUE),na.rm = TRUE)
-    ll = ll + ll_piece
+    ll= sum(dbinom(x=Y,size=1,prob = pi,log = TRUE),na.rm = TRUE)
+    return(-ll)
   }
-  return(-ll)
-}

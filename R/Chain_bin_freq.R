@@ -51,7 +51,7 @@ df.t$t.index <- unlist(lapply(df3$expand.t, function(x){
 # or where ID_a==ID_b (community risk)
 df.t$keep <- (df.t$ID == df.t$ID_b) | 
   (
-    (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b) &
+    (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b & df.t$t.index <= df.t$day.exposed) &
     (df.t$t.index <= df.t$day.exposed)  
   )
 

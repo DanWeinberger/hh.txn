@@ -91,12 +91,21 @@ delay.gen <- function(input_df){
 
 
 
-mod.data <- pbreplicate(10000,delay.gen(sim.data.df))
+#test1 <- df4[,c('hhID', 'ID','ID_b', 't.index','Y')]
+
+
+
+#mod.data <- pbreplicate(10000,delay.gen(sim.data.df))
+
+##1. Run delay.gen() to create X and Y for a single set of random delay dist value
+##2. Run mle() or optim() to estimate parameters
+##3 Repeat 1-2 N times
+##4 average of all N
+
 
 
 #Note here, we have all time points represented in the df, so the likelihood is very simple--no need to exponentiate stuff  
-chain_bin_lik <- function(params){
-  ll=0
+chain_bin_lik <- function(params, ID, hhID,t){
 
     #### Define logit_p = X*params
     logit_p <- X %*% params
@@ -104,8 +113,9 @@ chain_bin_lik <- function(params){
   ### Go back to p (probability  of transmission) with inverse logit: 
     p <- exp(logit_p)/(exp(logit_p) + 1) 
   
-    pi <- Y *p + (1-Y)*(1-p)
-
+    ##Pi needs to be a single value by ID/hhID/time point; Y should be same length
+    p.spl <- split(p, paste(ID, hhID, t))
+    pi <- exp(sapply(p.spl, function(x) sum(log(x))   ))
     
   ### Likelihood definition (for the moment no log-lik, so there is just a product over all HH members and time steps):
     ll= sum(dbinom(x=Y,size=1,prob = pi,log = TRUE),na.rm = TRUE)

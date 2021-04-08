@@ -22,6 +22,7 @@ sim.data.ls <- pblapply(1:10000,gen.hh)
 #This is like the data we would get from KSM
 sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
 
+##
 delay.gen <- function(input_df){
     sim.data.df.spl <- split(input_df, sim.data.df$hhID)
     
@@ -97,7 +98,6 @@ delay.gen <- function(input_df){
 
 
 
-#mod.data <- pbreplicate(10000,delay.gen(sim.data.df))
 
 ##1. Run delay.gen() to create X and Y for a single set of random delay dist value
 ##2. Run mle() or optim() to estimate parameters
@@ -125,3 +125,6 @@ chain_bin_lik <- function(params, ID, hhID,t){
     ll= sum(dbinom(x=Y,size=1,prob = pi,log = TRUE),na.rm = TRUE)
     return(-ll)
   }
+##
+
+#mod.data <- pbreplicate(10000,delay.gen(sim.data.df))

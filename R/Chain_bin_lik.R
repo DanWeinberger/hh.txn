@@ -11,7 +11,7 @@ chain_bin_lik <- function(params,Y,X){
   #q.spl <- split(q, paste(X$ID, X$hhID, X$t.index)) ## CHECK
   #q.spl <- split(q, paste(ID, hhID, t)) 
   
-  pi <- 1 - aggregate(log(q), by=list(X$ID, X$hhID, X$t.index ), FUN=sum)$x
+  pi <- 1 - exp(aggregate(log(q), by=list(X$ID, X$hhID, X$t.index ), FUN=sum)$x )
   
   #pi <-  1 - exp(sapply(q.spl,function(x) sum(log(x)))) 
   

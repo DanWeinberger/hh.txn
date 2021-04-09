@@ -9,13 +9,9 @@ chain_bin_lik <- function(params,Y,X){
   
   
   ##Pi needs to be a single value by ID/hhID/time point; Y should be same length
-  #q.spl <- split(q, paste(X$ID, X$hhID, X$t.index)) ## CHECK
-  #q.spl <- split(q, paste(ID, hhID, t)) 
-  
   pi <- 1 - exp(aggregate(log(q), by=list(X$ID, X$hhID, X$t.index ), FUN=sum)$x )
   
-  #pi <-  1 - exp(sapply(q.spl,function(x) sum(log(x)))) 
-  
+
   ### Likelihood definition (for the moment no log-lik, so there is just a product over all HH members and time steps):
   ll= sum(dbinom(x=Y,size=1,prob = pi,log = TRUE),na.rm = TRUE)
   return(-ll)

@@ -8,7 +8,7 @@ chain_bin_lik <- function(params,Y,X){
   q <- 1 - exp(logit_p)/(exp(logit_p) + 1) 
   
   ##Pi needs to be a single value by ID/hhID/time point; Y should be same length
-  q.spl <- split(q, paste(X$ID, X$hhID, X$t.index)) ## CHECK
+  #q.spl <- split(q, paste(X$ID, X$hhID, X$t.index)) ## CHECK
   #q.spl <- split(q, paste(ID, hhID, t)) 
   
   pi <- 1 - aggregate(log(q), by=list(X$ID, X$hhID, X$t.index ), FUN=sum)$x

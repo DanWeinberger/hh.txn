@@ -12,7 +12,7 @@ source('./R/data_manipulation.R')
 
 #Generate the synthetic data and store as a data frame
 N.HH <- 500
-sim.data.ls <- pblapply(1:N.HH, gen.hh)
+sim.data.ls <- pblapply(1:N.HH, gen.hh,CPI=(1-0.9995), prob.trans.day=(1-0.968),irr.vax=0.2)
 
 #This is like the data we would get from KSM
 sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
@@ -21,25 +21,29 @@ sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
 #### Likelihood definition for all HH
 model.run <- function(ds){
 ###### Set random values for the parameters
-  alpha0=0.4
-  delta0=0.7
-  beta=0.2
-  kappa=0.5
+  alpha0= log(1-0.968)
+  delta0= log(1-0.9995)
+  beta= log(0.2)
+  kappa= log(1)
   params <- c(alpha0,delta0,beta,kappa)
 
   ##
   LatentData <-  delay.gen(input_df = ds)
-  Y <- LatentData[[1]]
-  X <- LatentData[[2]]
+  Y <- LatentData$Y
+  X <- LatentData$X
   #chain_bin_lik(params,Y,X)
-  optim(params,chain_bin_lik,Y=Y,X=X)
+  optim(params,chain_bin_lik,Y=Y,X=X, method='BFGS')
  # mle(chain_bin_lik, start=params)
 }
 
 mod.data <- pbreplicate(2,model.run(ds=sim.data.df), simplify=F)
 
+parms <- sapply(mod.data,'[[','par')
 
-
+hist(parms[1,])
+hist(parms[2,])
+hist(parms[3,])
+hist(parms[4,])
 
 #test1 <- df4[,c('hhID', 'ID','ID_b', 't.index','Y')]
 

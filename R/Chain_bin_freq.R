@@ -10,8 +10,16 @@ source('./R/delay_dist_sim.R')
 source('./R/Chain_bin_lik.R')
 source('./R/data_manipulation.R')
 
+#Generate the synthetic data and store as a data frame
+N.HH <- 500
+sim.data.ls <- pblapply(1:N.HH, gen.hh)
+
+#This is like the data we would get from KSM
+sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
+
+
 #### Likelihood definition for all HH
-model.run <- function(N.HH){
+model.run <- function(ds){
 ###### Set random values for the parameters
   alpha0=0.4
   delta0=0.7
@@ -19,16 +27,18 @@ model.run <- function(N.HH){
   kappa=0.5
   params <- c(alpha0,delta0,beta,kappa)
 
-  #Generate the data and store as a data frame
-  sim.data.ls <- pblapply(1:N.HH,gen.hh)
-  #This is like the data we would get from KSM
-  sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
   ##
-  Y <- delay.gen(input_df = sim.data.df)[[1]]
-  X <- delay.gen(input_df = sim.data.df)[[2]]
-  chain_bin_lik(params,Y,X)
-  #optim(params,chain_bin_lik,Y=Y,X=X)
+  LatentData <-  delay.gen(input_df = ds)
+  Y <- LatentData[[1]]
+  X <- LatentData[[2]]
+  #chain_bin_lik(params,Y,X)
+  optim(params,chain_bin_lik,Y=Y,X=X)
+ # mle(chain_bin_lik, start=params)
 }
+
+mod.data <- pbreplicate(2,model.run(ds=sim.data.df), simplify=F)
+
+
 
 
 #test1 <- df4[,c('hhID', 'ID','ID_b', 't.index','Y')]

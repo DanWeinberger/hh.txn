@@ -5,7 +5,8 @@ chain_bin_lik <- function(params,Y,X){
   logit_p <- as.vector(as.matrix(X[,1:4]) %*% params) ## Added as.matrix
   
   ### Go back to p (probability  of transmission) with inverse logit: 
-  q <- 1 - exp(logit_p)/(exp(logit_p) + 1) 
+  q <- 1 - 1/(1 + exp(-logit_p))
+  
   
   ##Pi needs to be a single value by ID/hhID/time point; Y should be same length
   #q.spl <- split(q, paste(X$ID, X$hhID, X$t.index)) ## CHECK

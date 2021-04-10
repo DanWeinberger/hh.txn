@@ -11,12 +11,11 @@ source('./R/Chain_bin_lik.R')
 source('./R/data_manipulation.R')
 
 #Generate the synthetic data and store as a data frame
-N.HH <- 500
+N.HH <- 5000
 sim.data.ls <- pblapply(1:N.HH, gen.hh,CPI=(1-0.9995), prob.trans.day=(1-0.968),irr.vax1=0.5,irr.vax2=0.4)
 
 #This is like the data we would get from KSM
 sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
-
 
 #### Likelihood definition for all HH
 model.run <- function(ds){
@@ -55,6 +54,37 @@ hist(parms[4,])
 #Need Y to represent each HH and time, from 0 to censor time; 
 #Check that simulated data truncated to 21 days -> this goes from 1 to ncol(infect.status) so correct
 
+############################################
+#clock the pieces of the likelihood function
+#############################################
+
+#### Define logit_p = X*params; need  to add as.matrix
+ptm <- proc.time()
+logit_p <- as.vector(as.matrix(X[,1:4]) %*% params) ## Added as.matrix
+proc.time() - ptm
+
+### Go back to p (probability  of transmission) with inverse logit: 
+ptm <- proc.time()
+q <- 1 - 1/(1 + exp(-logit_p))
+proc.time() - ptm
+
+##Pi needs to be a single value by ID/hhID/time point; Y should be same length
+ptm <- proc.time()
+  data_tab <- cbind.data.frame(log.q=log(q),X)
+  data_t = data.table(data_tab)
+  ans = data_t[,list(A = sum(log.q)), by = 'ID,hhID,t.index']
+  pi=ans$A
+proc.time() - ptm
+
+#Old, slow version
+# ptm <- proc.time()
+# pi <- 1 - exp(aggregate(log(q), by=list(X$ID, X$hhID, X$t.index ), FUN=sum)$x )
+# proc.time() - ptm
+
+### Likelihood definition (for the moment no log-lik, so there is just a product over all HH members and time steps):
+ptm <- proc.time()
+ll= sum(dbinom(x=Y,size=1,prob = pi,log = TRUE),na.rm = TRUE)
+proc.time() - ptm
 
 
 

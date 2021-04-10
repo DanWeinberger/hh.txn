@@ -60,12 +60,17 @@ delay.gen <- function(input_df){
   
   df4$infect.at.timet <- df4$infected
   df4$infect.at.timet[df4$t.index < df4$day.exposed] <- 0
-  Y.df <- aggregate( df4$infect.at.timet, by=list( 'ID'=df4$ID, 'hhID'=df4$hhID, 'tindex'=df4$t.index ), FUN=mean)
+  
+  #Y.df <- aggregate( df4$infect.at.timet, by=list( 'ID'=df4$ID, 'hhID'=df4$hhID, 'tindex'=df4$t.index ), FUN=mean)
+  data_tab <- cbind.data.frame(df4[,c('infect.at.timet','ID','hhID','t.index')])
+  data_t = data.table(data_tab)
+  Y.df = data_t[,list(A = mean(infect.at.timet)), by = 'ID,hhID,t.index']
+  
   
   #Design matrix 
   X <- df4[c('alpha0','delta0','vax1','vax2','ID','hhID','t.index')]  ###CHECK if OK   
   
-  Y <-  Y.df$x
+  Y <-  Y.df$A
   
   out.list=list('Y'=Y, 'X'=X)  
   return(out.list)

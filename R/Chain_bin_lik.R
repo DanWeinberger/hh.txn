@@ -9,7 +9,7 @@ chain_bin_lik <- function(params,Y,X){
   
   
   ##Pi needs to be a single value by ID/hhID/time point; Y should be same length
- # pi <- 1 - exp(aggregate(log(q), by=list(X$ID, X$hhID, X$t.index ), FUN=sum)$x )
+  #pi <- 1 - exp(aggregate(log(q), by=list(X$ID, X$hhID, X$t.index ), FUN=sum)$x )
   data_tab <- cbind.data.frame(log.q=log(q),X)
   data_t = data.table(data_tab)
   ans = data_t[,list(A = sum(log.q)), by = 'ID,hhID,t.index']

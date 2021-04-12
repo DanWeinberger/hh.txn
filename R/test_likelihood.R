@@ -1,5 +1,6 @@
 library(reshape2)
 source("./R/Chain_bin_lik.R")
+
 ###################
 ### Set the true parameter values
 alpha0_true= log(0.3)
@@ -107,13 +108,14 @@ sim.data.ls <- pblapply(1:N.HH, gen.hh.test)
 sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
 
 #### Likelihood definition for all HH
-model.run <- function(ds){
+alpha0=0
+delta0= 0
+beta= 0
+kappa= 0
+params <- c(alpha0,delta0,beta,kappa)
+model.run <- function(ds, params){
   ###### Set random values for the parameters
-  alpha0=0
-  delta0= 0
-  beta= 0
-  kappa= 0
-  params <- c(alpha0,delta0,beta,kappa)
+
   
   ##
   LatentData <-  data.manipulation.test(input_df = ds)
@@ -124,7 +126,7 @@ model.run <- function(ds){
   # mle(chain_bin_lik, start=params)
 }
 
-mod.data <- pbreplicate(1,model.run(ds=sim.data.df), simplify=F)
+mod.data <- pbreplicate(1,model.run(ds=sim.data.df,params=params), simplify=F)
 
 
 ### Check parameters
@@ -141,4 +143,17 @@ se<-sqrt(diag(OI))
 parms
 se
 params_true
+
+
+### Test the loglikelihood with true parameters: 
+
+mod.data1 <- pbreplicate(1,model.run(ds=sim.data.df,params=params), simplify=F)
+parms <- sapply(mod.data1,'[[','par')
+mod.data2 <- pbreplicate(1,model.run(ds=sim.data.df,params=params_true), simplify=F)
+mod.data3 <- pbreplicate(1,model.run(ds=sim.data.df,params=parms), simplify=F)
+
+
+mod.data1[[1]]$value
+mod.data2[[1]]$value
+mod.data3[[1]]$value
 

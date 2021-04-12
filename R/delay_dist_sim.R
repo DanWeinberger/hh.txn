@@ -2,13 +2,15 @@
 
 delay_dist_sim <- function(df1){
   n.sim <- nrow(df1)
+  
+  #Could modify one of these to be time from infection to test
   expose.dist= rgamma(n.sim,4,0.75) #duration latent
   infect.dist= rgamma(n.sim,4,0.75) #duration infectiousness
-  end.inf= rgamma(n.sim,4, 0.75) #duration infectiousness
+  #end.inf= rgamma(n.sim,4, 0.75) #duration infectiousness
   
   day.infectious <- round(df1$day_index - infect.dist)
   day.exposed <- round(day.infectious - expose.dist)
-  day.infectious.end <-  round(day.infectious + end.inf)
+  day.infectious.end <-  round(day.infectious + infect.dist)
   first.day.hh <- min(day.exposed, na.rm=T) - 1
   last.day.hh <- max(day.infectious.end, na.rm=T)
   

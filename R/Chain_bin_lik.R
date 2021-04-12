@@ -13,7 +13,7 @@ chain_bin_lik <- function(params,Y,X){
   data_tab <- cbind.data.frame(log.q=log(q),X)
   data_t = data.table(data_tab)
   ans = data_t[,list(A = sum(log.q)), by = 'ID,hhID,t.index']
-  ans <- setorder(ans, t.index) ### To order based on t.index and not ID
+  ans <- setorder(ans, t.index,ID,hhID) ### To order based on t.index and not ID
   pi= 1- exp(ans$A)
 
   ### Likelihood definition (for the moment no log-lik, so there is just a product over all HH members and time steps):

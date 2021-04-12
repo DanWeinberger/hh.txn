@@ -65,6 +65,7 @@ delay.gen <- function(input_df){
   data_tab <- cbind.data.frame(df4[,c('infect.at.timet','ID','hhID','t.index')])
   data_t = data.table(data_tab)
   Y.df = data_t[,list(A = mean(infect.at.timet)), by = 'ID,hhID,t.index']
+  Y.df <- setorder(Y.df, t.index,ID,hhID) ### To order based on t.index and not ID
   
   
   #Design matrix 

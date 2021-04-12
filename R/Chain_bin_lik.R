@@ -2,7 +2,7 @@
 chain_bin_lik <- function(params,Y,X){
   
   #### Define logit_p = X*params; need  to add as.matrix
-  logit_p <- as.vector(as.matrix(X[,1:4]) %*% params) ## Added as.matrix
+  logit_p <- as.vector(as.matrix(X[,1:3]) %*% params) ## Added as.matrix
   
   ### Go back to p (probability  of transmission) with inverse logit: 
   q <- 1 - 1/(1 + exp(-logit_p))

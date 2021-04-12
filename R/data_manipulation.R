@@ -51,12 +51,14 @@ delay.gen <- function(input_df){
   df4$alpha0 <- 0
   df4$alpha0[df4$ID != df4$ID_b ] <- 1
   
-  df4$vax1 <- df4$vax1dose
+  #df4$vax1 <- df4$vax1dose
   
-  df4$vax2 <- df4$vax1dose_b
-  df4$vax2[df4$alpha0==0] <- 0
+  #df4$vax2 <- df4$vax1dose_b
+  #df4$vax2[df4$alpha0==0] <- 0
   
-  #HMM is this right? seems like we could double-count Y=1 for certain contact pairs?
+  #If either of the 2 people is vaccinated, set vax1=1
+  df4$vax1 <- df4$vax1dose + df4$vax1dose_b 
+  df4$vax1[df4$vax1 >1] <- 1
   
   df4$infect.at.timet <- df4$infected
   df4$infect.at.timet[df4$t.index < df4$day.exposed] <- 0
@@ -69,7 +71,7 @@ delay.gen <- function(input_df){
   
   
   #Design matrix 
-  X <- df4[c('alpha0','delta0','vax1','vax2','ID','hhID','t.index')]  ###CHECK if OK   
+  X <- df4[c('alpha0','delta0','vax1','ID','hhID','t.index')]  ###CHECK if OK   
   
   Y <-  Y.df$A
   

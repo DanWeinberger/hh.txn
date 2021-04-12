@@ -3,7 +3,7 @@ set.seed(1234)
 library(reshape2)
 
 ###Simulate  people
-gen.hh <- function(idN, CPI=(1-0.90), prob.trans.day=(1-0.90), prop.vax1=0.5, prop.vax2=0.5, irr.vax1=1,irr.vax2=1, IRR.comm=1){
+gen.hh <- function(idN, CPI=(1-0.90), prob.trans.day=(1-0.90), prop.vax1=0.5, prop.vax2=0.75, irr.vax1=1,irr.vax2=1, IRR.comm=1){
   
   HH.size <- min(1+ rpois(n=1,1.5),5) #cap at 5
   df1 <- as.data.frame(matrix(NA, nrow=HH.size, ncol=2))
@@ -13,7 +13,7 @@ gen.hh <- function(idN, CPI=(1-0.90), prob.trans.day=(1-0.90), prop.vax1=0.5, pr
   
   
   df1$vax1dose <- rbinom(nrow(df1), 1,prop.vax1)
-  df1$vax2dose <- rbinom(nrow(df1), 1,prop.vax2)
+  df1$vax2dose <- rbinom(nrow(df1), 1,prop.vax2)*df1$vax1dose
   
   #These are time distributions that specify for the person if they are infected, how much time to add before infectious, and ow long infectious
   expose.dist= rgamma(length(df1$ID),4,  0.75) #duration latent
@@ -23,7 +23,7 @@ gen.hh <- function(idN, CPI=(1-0.90), prob.trans.day=(1-0.90), prop.vax1=0.5, pr
   infect.status <- matrix(NA, nrow=nrow(df1), ncol=200)
   n.infect.prev <- matrix(NA, nrow=nrow(df1), ncol=200)
   
-  prob.infect.day <- prob.trans.day * irr.vax1^df1$vax1dose *irr.vax2^df1$vax2dose  #prob of being infected per day, per exposure,
+  prob.infect.day <- prob.trans.day * irr.vax1^df1$vax1dose*irr.vax2^df1$vax2dose  #prob of being infected per day, per exposure,
   prob.uninfect.day <- 1 - prob.infect.day
   prob.uninf.day.comm <- 1 - CPI * irr.vax1^df1$vax1dose*irr.vax2^df1$vax2dose  
   

@@ -5,10 +5,10 @@ source("./R/Chain_bin_lik.R")
 
 ###################
 ### Set the true parameter values
-alpha0_true= log(0.3)
+alpha0_true= log(0.01)
 delta0_true= log(0.08)
-beta_true= log(0.5)
-kappa_true= log(0.09)
+beta_true= log(0.09)
+kappa_true= log(0.07)
 params_true <- c(alpha0_true,delta0_true,beta_true,kappa_true) 
 
 ### Define the functions used in this file
@@ -38,20 +38,7 @@ data.manipulation.test <- function(input_df){
 
   ### Merge df1 and df2 by HHID; name this df3 
   df3 <- merge(df1,df2,by.y='hhID_b' , by.x='hhID')
-  #df3$expand.t <- NA
-  #df3$expand.t <- df3$max.time.hh #censor uninfected person at max.time.hh
-  #Add an index for each person
-  #df3$rowN <- 1:nrow(df3)
-  #df.t <- df3[rep(df3$rowN, times=df3$expand.t),] #expands the df to number of time points
-
-  #Add an index for each person
-  #df.t$t.index <- unlist(lapply(df3$expand.t, function(x){ 
-   # z <- 1:x 
-   # return(z)
-  #}))
-
-  #df3 <- df.t
-
+  
   #Create elements for design matrix
   df3$delta0 <- 0
   df3$delta0[(df3$ID == df3$ID_b)] <- 1 #exogenous/community risk 
@@ -63,27 +50,24 @@ data.manipulation.test <- function(input_df){
   df3$vax2 <- df3$vax1dose_b
   df3$vax2[df3$alpha0==0] <- 0
 
-  #####
-  
-  CPI=(1-0.90)
-  prob.trans.day=(1-0.90)
-  prob.infect.day <- prob.trans.day   #prob of being infected per day, per exposure,
-  prob.uninfect.day <- 1 - prob.infect.day
-  prob.uninf.day.comm <- 1 - CPI 
-  
+
   
   #Design matrix 
   X <- df3[c('alpha0','delta0','vax1','vax2','ID','hhID')]
-  X$t.index <- 0
-  X$infect.status <- 0
+  
+  ### Set the time at t=0  --> in  the loop it starts computing 
+  X$t.index <- 1
+  infect.stat <- 0
+  #X$infect.status <- infect.stat
   N.hh.members <- aggregate( df1$ID, by=list( 'hhID'=df1$hhID), FUN=length)$x
-  infect.status <- 1 - rbinom(nrow(df1), 1, prob.uninf.day.comm )
   mat.inf.final <- list()
-  mat.inf  <- aggregate( X$infect.status, by=list( 'ID'=X$ID, 'hhID'=X$hhID, 'tindex'=X$t.index ), FUN=mean)
-  colnames(mat.inf)[4] <- 'infect.status'
+  mat.inf  <- aggregate( X$t.index, by=list( 'ID'=X$ID, 'hhID'=X$hhID), FUN=mean)
+  colnames(mat.inf)[3] <- 'tindex'
+  mat.inf$infect.status <- infect.stat
   for(i in 1:N.HH){
     mat.inf.2  <- mat.inf[mat.inf$hhID==i,]
-    for (t in 1:df1$max.time.hh[1]){
+    for (t in 2:(df1$max.time.hh[1])){
+      
         logit_p <- as.vector(as.matrix(X[X$hhID==i,][,1:4]) %*% params_true) 
       ### Go back to p (probability  of transmission) with inverse logit: 
         q <- 1 - 1/(1 + exp(-logit_p))
@@ -92,9 +76,13 @@ data.manipulation.test <- function(input_df){
         data_t = data.table(data_tab)
         ans = data_t[,list(A = sum(log.q)), by = 'ID,hhID,t.index']
         pi= 1- exp(ans$A)
-        mat.inf.2$tindex[1:N.hh.members[i]] <-ifelse(mat.inf.2$infect.status[1:N.hh.members[i]]!=1, (mat.inf.2$tindex[1:N.hh.members[i]]+1),mat.inf.2$tindex[1:N.hh.members[i]])
+        ### Generate probabilities of becoming infected
         infect.status <- rbinom(n=N.hh.members[i],size=1,prob = pi)
+        ### Store results: if infected status==0, place  the new results, otherwise leave 1
         mat.inf.2$infect.status[1:N.hh.members[i]] <- ifelse(mat.inf.2$infect.status[1:N.hh.members[i]]!=1,infect.status,1)
+        ### Increase time index if infect.status==1
+        mat.inf.2$tindex[1:N.hh.members[i]] <-ifelse(mat.inf.2$infect.status[1:N.hh.members[i]]!=1, (mat.inf.2$tindex[1:N.hh.members[i]]+1),mat.inf.2$tindex[1:N.hh.members[i]])
+        
     }
     mat.inf.final[[i]] <- mat.inf.2
     

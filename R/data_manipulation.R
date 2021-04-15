@@ -54,9 +54,7 @@ delay.gen <- function(input_df){
   df4$vax1 <- df4$vax1dose
   
   df4$vax2 <- df4$vax1dose_b
-  df4$vax2[df4$alpha0==0] <- 0
-  
-  #HMM is this right? seems like we could double-count Y=1 for certain contact pairs?
+  df4$vax2[df4$delta0==1] <- 0 #person B's vaccine status doesn't influence whether person A is infected
   
   df4$infect.at.timet <- df4$infected
   df4$infect.at.timet[df4$t.index < df4$day.exposed] <- 0
@@ -65,11 +63,13 @@ delay.gen <- function(input_df){
   data_tab <- cbind.data.frame(df4[,c('infect.at.timet','ID','hhID','t.index')])
   data_t = data.table(data_tab)
   Y.df = data_t[,list(A = mean(infect.at.timet)), by = 'ID,hhID,t.index']
-  Y.df <- setorder(Y.df, t.index,ID,hhID) ### To order based on t.index and not ID
+  Y.df <- setorder(Y.df, hhID, ID, t.index) ### To order based on t.index and not ID
   
   
   #Design matrix 
   X <- df4[c('alpha0','delta0','vax1','vax2','ID','hhID','t.index')]  ###CHECK if OK   
+  X <- data.table(X)
+  X <- setorder(X,  hhID, ID, t.index)
   
   Y <-  Y.df$A
   

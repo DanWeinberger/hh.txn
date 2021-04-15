@@ -12,18 +12,21 @@ source('./R/data_manipulation.R')
 
 #Generate the synthetic data and store as a data frame
 N.HH <- 5000
-sim.data.ls <- pblapply(1:N.HH, gen.hh,CPI=(1-0.9995), prob.trans.day=(1-0.968),irr.vax1=0.5,irr.vax2=1)
+sim.data.ls <- pblapply(1:N.HH, gen.hh,CPI=(1-0.9995), #Increase CPI to have more cases, 
+                        prob.trans.day=(1-0.968),
+                        irr.vax1=0.2,irr.vax2=1)
 
 #This is like the data we would get from KSM
 sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
+
 
 #### Likelihood definition for all HH
 model.run <- function(ds){
 ###### Set random values for the parameters
   alpha0=0
   delta0= 0
-  beta= 0
-  kappa= 0
+  beta= 0.03
+  kappa= -0.03
   params <- c(alpha0,delta0,beta,kappa)
 
   ##
@@ -35,9 +38,13 @@ model.run <- function(ds){
  # mle(chain_bin_lik, start=params)
 }
 
+ptm <- proc.time()
 mod.data <- pbreplicate(1,model.run(ds=sim.data.df), simplify=F)
+proc.time() - ptm
 
 parms <- sapply(mod.data,'[[','par')
+parms
+
 
 hist(parms[1,])
 hist(parms[2,])

@@ -8,21 +8,22 @@ library(dplyr)
 
 source('./R/simulate_data.R')
 source('./R/delay_dist_sim.R')
-source('./R/Chain_bin_lik2.R')
+source('./R/Chain_bin_lik.R')
 source('./R/data_manipulation_df.R')
 
 #Generate the synthetic data and store as a data frame
-N.HH <- 20000
-sim.data.ls <- pblapply(1:N.HH, gen.hh,CPI=(1-0.9995), prob.trans.day=(1-0.968),irr.vax1=0.5,irr.vax2=1)
 
-
+#N.HH <- 20000
+#sim.data.ls <- pblapply(1:N.HH, gen.hh,CPI=(1-0.9995), prob.trans.day=(1-0.968),irr.vax1=0.5,irr.vax2=1)
+#saveRDS(sim.data.ls,'sim.hh.data20k.rds')
 #How many infections per household
+
+sim.data.ls <- readRDS('sim.hh.data20k.rds')
 hh.inf <- sapply(sim.data.ls, function(x) sum(x$infected))
 
 sim.data.ls.pos <- sim.data.ls[hh.inf>0]
 
 sim.data.ls.pos.sub <- sim.data.ls.pos[1:1000]
-
 
 sim.data.df <- do.call('rbind.data.frame', sim.data.ls.pos.sub)
 
@@ -48,6 +49,8 @@ parms
 ############################################
 #clock the pieces of the likelihood function
 #############################################
+sim.data.ls.pos.sub <- sim.data.ls.pos[1:4000]
+sim.data.df <- do.call('rbind.data.frame', sim.data.ls.pos.sub)
 
 alpha0=0
 delta0= 0
@@ -60,11 +63,8 @@ ptm <- proc.time()
 LatentData <-  delay.gen(sim.data.df)
 proc.time() - ptm
 
-X.ls <- LatentData$X.ls
-Y.ls <- LatentData$Y.ls
-
-nrowX <- sapply(X.ls, nrow)
-
+X <- LatentData$X
+Y <- LatentData$Y
 
 #### Define logit_p = X*params; need  to add as.matrix
 ptm <- proc.time()
@@ -77,21 +77,31 @@ q <- 1 - 1/(1 + exp(-logit_p))
 proc.time() - ptm
 
 ##Pi needs to be a single value by ID/hhID/time point; Y should be same length
+# ptm <- proc.time()
+#   data_tab <- cbind.data.frame(log.q=log(q),X)
+#   data_t = data.table(data_tab)
+#   ans = data_t[,list(A = sum(log.q)), by = 'ID,hhID,t.index']
+#   pi=ans$A
+# proc.time() - ptm
+
 ptm <- proc.time()
-  data_tab <- cbind.data.frame(log.q=log(q),X)
-  data_t = data.table(data_tab)
-  ans = data_t[,list(A = sum(log.q)), by = 'ID,hhID,t.index']
-  pi=ans$A
+ data_t = data.table(log.q=log(q),X=X)
+ proc.time() - ptm
+ 
+ ptm <- proc.time()
+ ans = data_t[,list(sum.log.q = sum(log.q)), by = 'X.ID,X.hhID,X.t.index']
+ proc.time() - ptm
+ 
+ ptm <- proc.time()
+ pi <- 1- exp(ans$sum.log.q)
 proc.time() - ptm
 
-#Old, slow version
-# ptm <- proc.time()
-# pi <- 1 - exp(aggregate(log(q), by=list(X$ID, X$hhID, X$t.index ), FUN=sum)$x )
-# proc.time() - ptm
+
 
 ### Likelihood definition (for the moment no log-lik, so there is just a product over all HH members and time steps):
 ptm <- proc.time()
-ll= sum(dbinom(x=Y,size=1,prob = pi,log = TRUE),na.rm = TRUE)
+Y1 <- setorder(Y, t.index,ID,hhID) ### To order based on t.index and not ID
+ll= sum(dbinom(x=Y1$A,size=1,prob = pi,log = TRUE),na.rm = TRUE)
 proc.time() - ptm
 
 

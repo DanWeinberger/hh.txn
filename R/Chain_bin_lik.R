@@ -10,14 +10,14 @@ chain_bin_lik <- function(params,Y,X){
   
   ##Pi needs to be a single value by ID/hhID/time point; Y should be same length
   #pi <- 1 - exp(aggregate(log(q), by=list(X$ID, X$hhID, X$t.index ), FUN=sum)$x )
-  data_tab <- cbind.data.frame(log.q=log(q),X)
-  data_t = data.table(data_tab)
-  ans = data_t[,list(A = sum(log.q)), by = 'ID,hhID,t.index']
-  ans <- setorder(ans, t.index,ID,hhID) ### To order based on t.index and not ID
-  pi= 1- exp(ans$A)
-
+  data_t = data.table(log.q=log(q),X=X)
+  ans = data_t[, .(sum.log.q = sum(log.q)), by =.(X.t.index,X.ID,X.hhID)]
+  pi <- 1- exp(ans$sum.log.q)
+  
+  Y1 <- setorder(Y, t.index,ID,hhID) ### To order based on t.index and not ID
+  
   ### Likelihood definition (for the moment no log-lik, so there is just a product over all HH members and time steps):
-  ll= sum(dbinom(x=Y,size=1,prob = pi,log = TRUE),na.rm = TRUE)
+  ll= sum(dbinom(x=Y1$A,size=1,prob = pi,log = TRUE),na.rm = TRUE)
   return(-ll)
 }
 ##

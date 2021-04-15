@@ -5,7 +5,7 @@ library(reshape2)
 ###Simulate  people
 gen.hh <- function(idN, CPI=(1-0.90), prob.trans.day=(1-0.90), prop.vax1=0.5, prop.vax2=0.75, irr.vax1=1,irr.vax2=1, IRR.comm=1){
   
-  HH.size <- min(1+ rpois(n=1,1.5),5) #cap at 5
+  HH.size <- min(2+ rpois(n=1,1.5),5) #cap at 5
   df1 <- as.data.frame(matrix(NA, nrow=HH.size, ncol=2))
   names(df1) <- c('ID', 'hhID')
   df1$hhID <- idN

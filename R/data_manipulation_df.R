@@ -71,14 +71,9 @@ delay.gen <- function(input_df){
   #Design matrix 
   X <- df4[c('alpha0','delta0','vax1','vax2','ID','hhID','t.index')]  ###CHECK if OK   
   
-  Y <-  Y.df$A
+  #Y <-  Y.df$A
   
-  X <- cbind.data.frame(X)
-  
-  x.spl <- split(X, X$hhID)
-
-  out.list=list( 'Y.ls'=Y.df  ,'X.ls'=x.spl)   
+  out.list=list('Y'=Y.df, 'X'=X)  
   return(out.list)
 }
-
 

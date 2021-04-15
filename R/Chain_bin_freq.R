@@ -4,59 +4,67 @@ library(matrixStats)
 library(reshape2)
 library(data.table)
 library(stats4)
+library(dplyr)
 
 source('./R/simulate_data.R')
 source('./R/delay_dist_sim.R')
-source('./R/Chain_bin_lik.R')
-source('./R/data_manipulation.R')
+source('./R/Chain_bin_lik2.R')
+source('./R/data_manipulation_df.R')
 
 #Generate the synthetic data and store as a data frame
-N.HH <- 5000
+N.HH <- 20000
 sim.data.ls <- pblapply(1:N.HH, gen.hh,CPI=(1-0.9995), prob.trans.day=(1-0.968),irr.vax1=0.5,irr.vax2=1)
 
-#This is like the data we would get from KSM
-sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
 
-#### Likelihood definition for all HH
-model.run <- function(ds){
-###### Set random values for the parameters
-  alpha0=0
-  delta0= 0
-  beta= 0
-  kappa= 0
-  params <- c(alpha0,delta0,beta,kappa)
+#How many infections per household
+hh.inf <- sapply(sim.data.ls, function(x) sum(x$infected))
 
-  ##
-  LatentData <-  delay.gen(input_df = ds)
-  Y <- LatentData$Y
-  X <- LatentData$X
-  #chain_bin_lik(params,Y,X)
-  optim(params,chain_bin_lik,Y=Y,X=X, method='BFGS')
- # mle(chain_bin_lik, start=params)
-}
+sim.data.ls.pos <- sim.data.ls[hh.inf>0]
 
-mod.data <- pbreplicate(1,model.run(ds=sim.data.df), simplify=F)
+sim.data.ls.pos.sub <- sim.data.ls.pos[1:1000]
+
+
+sim.data.df <- do.call('rbind.data.frame', sim.data.ls.pos.sub)
+
+LatentData <-  delay.gen(input_df = sim.data.df)
+
+params <- c(alpha0=0,delta0=0,beta=0,kappa=0)
+ptm <- proc.time()
+mod1 <- optim(params,chain_bin_lik,Y=LatentData$Y,X=LatentData$X, method='BFGS')
+proc.time() - ptm
 
 parms <- sapply(mod.data,'[[','par')
+parms
 
-hist(parms[1,])
-hist(parms[2,])
-hist(parms[3,])
-hist(parms[4,])
 
-#test1 <- df4[,c('hhID', 'ID','ID_b', 't.index','Y')]
 
-##1. Run delay.gen() to create X and Y for a single set of random delay dist value
-##2. Run mle() or optim() to estimate parameters
-##3 Repeat 1-2 N times
-##4 average of all N
 
-#Need Y to represent each HH and time, from 0 to censor time; 
-#Check that simulated data truncated to 21 days -> this goes from 1 to ncol(infect.status) so correct
+
+
+
+
+
 
 ############################################
 #clock the pieces of the likelihood function
 #############################################
+
+alpha0=0
+delta0= 0
+beta= 0
+kappa= 0
+params <- c(alpha0,delta0,beta,kappa)
+
+##
+ptm <- proc.time()
+LatentData <-  delay.gen(sim.data.df)
+proc.time() - ptm
+
+X.ls <- LatentData$X.ls
+Y.ls <- LatentData$Y.ls
+
+nrowX <- sapply(X.ls, nrow)
+
 
 #### Define logit_p = X*params; need  to add as.matrix
 ptm <- proc.time()

@@ -32,7 +32,7 @@ X <- data.frame(X)
 outcome_name <- 'Y'
 
 formula <- as.formula(paste0(outcome_name, '~',
-                             'ID+ hhID+vax1dose+(1|hhID)'))
+                             'vax1dose+(1|hhID)'))
 mod1 <- glmer(formula = formula, data=X, family=binomial(link="cloglog"),verbose=TRUE)
 
 

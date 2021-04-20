@@ -4,14 +4,14 @@ library(matrixStats)
 library(reshape2)
 library(data.table)
 library(stats4)
-
+set.seed(123)
 source('./R/simulate_data.R')
 source('./R/delay_dist_sim.R')
 source('./R/Chain_bin_lik.R')
 source('./R/data_manipulation.R')
 
 #Generate the synthetic data and store as a data frame
-N.HH <- 500
+N.HH <- 5000
 sim.data.ls <- pblapply(1:N.HH, gen.hh,CPI=(1-0.9995), #Increase CPI to have more cases, 
                         prob.trans.day=(1-0.968),
                         irr.vax1=0.7,irr.vax2=1)

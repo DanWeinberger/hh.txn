@@ -39,7 +39,10 @@ delay.gen <- function(input_df){
   #}
   
   ### CHECK: 
-  df.t$keep <-  T *ifelse(df.t$ID == df.t$ID_b,1,0)  | (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b )
+  #df.t$keep <-  T *ifelse(df.t$ID == df.t$ID_b,1,0)  | (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b )
+  
+  #Corrected by Ottavia 4/20/2021
+  df.t$keep <-  T *ifelse(df.t$ID == df.t$ID_b,1,0)  | (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b )*ifelse(df.t$infected_b==1,1,0)
   
   
   df4 <- df.t[df.t$keep==1,]

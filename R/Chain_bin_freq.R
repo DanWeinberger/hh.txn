@@ -11,10 +11,10 @@ source('./R/Chain_bin_lik.R')
 source('./R/data_manipulation.R')
 
 #Generate the synthetic data and store as a data frame
-N.HH <- 5000
+N.HH <- 500
 sim.data.ls <- pblapply(1:N.HH, gen.hh,CPI=(1-0.9995), #Increase CPI to have more cases, 
                         prob.trans.day=(1-0.968),
-                        irr.vax1=0.2,irr.vax2=1)
+                        irr.vax1=0.7,irr.vax2=1)
 
 #This is like the data we would get from KSM
 sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
@@ -23,10 +23,10 @@ sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
 #### Likelihood definition for all HH
 model.run <- function(ds){
 ###### Set random values for the parameters
-  alpha0=0
-  delta0= 0
-  beta= 0.03
-  kappa= -0.03
+  alpha0=0.5
+  delta0= 0.8
+  beta= 0.5
+  kappa= 0.5
   params <- c(alpha0,delta0,beta,kappa)
 
   ##
@@ -34,7 +34,7 @@ model.run <- function(ds){
   Y <- LatentData$Y
   X <- LatentData$X
   #chain_bin_lik(params,Y,X)
-  optim(params,chain_bin_lik,Y=Y,X=X, method='BFGS')
+  nlm(chain_bin_lik,params,Y=Y,X=X)
  # mle(chain_bin_lik, start=params)
 }
 
@@ -42,7 +42,7 @@ ptm <- proc.time()
 mod.data <- pbreplicate(1,model.run(ds=sim.data.df), simplify=F)
 proc.time() - ptm
 
-parms <- sapply(mod.data,'[[','par')
+parms <- sapply(mod.data,'[[','estimate')
 parms
 
 

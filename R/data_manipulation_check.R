@@ -1,10 +1,25 @@
-delay.gen <- function(input_df){
+library(boot)
+library(pbapply)
+library(matrixStats)
+library(reshape2)
+library(data.table)
+library(stats4)
+
+source('./R/simulate_data.R')
+source('./R/delay_dist_sim.R')
+source('./R/Chain_bin_lik.R')
+
+
+####### Modified data manipulation: add condition that infectious period of contact is considered only if contact is infected
+####### see line 51
+delay.gen.modified <- function(input_df){
   sim.data.df.spl <- split(input_df, input_df$hhID)
   
   df1.ls <- lapply(sim.data.df.spl, delay_dist_sim)
   
   df1 <- do.call('rbind.data.frame',df1.ls)
   
+  df1 <- df1[1:4,]
   df1$ID <- c(1,2,3,4)
   df1$hhID <- c(1,1,1,1)
   df1$infected <- c(1,1,0,0)
@@ -36,15 +51,7 @@ delay.gen <- function(input_df){
     z <- 1:x 
     return(z)
   }))
-  
-  # keep rows where the time index is within range of the infectious period for person b;
-  # or where ID_a==ID_b (community risk)
-  #if(df.t$ID == df.t$ID_b){ #exogenous ## This doesn't work
-  # df.t$keep <-  T   
-  #}else{ #within-HH
-  #  df.t$keep <- (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b ) 
-  #}
-  
+
   ### CHECK: 
   df.t$keep <-  T *ifelse(df.t$ID == df.t$ID_b,1,0)  | (df.t$t.index >= df.t$day.infectious_b & df.t$t.index <= df.t$day.infectious.end_b )*ifelse(df.t$infected_b==1,1,0)
   
@@ -83,5 +90,20 @@ delay.gen <- function(input_df){
   out.list=list('Y'=Y, 'X'=X)  
   return(out.list)
 }
+
+
+##########  
+#Generate the synthetic data and store as a data frame
+N.HH <- 10
+sim.data.ls <- pblapply(1:N.HH, gen.hh,CPI=(1-0.9995), prob.trans.day=(1-0.968),irr.vax1=0.5,irr.vax2=1)
+
+#This is like the data we would get from KSM
+sim.data.df <- do.call('rbind.data.frame', sim.data.ls)
+
+
+LatentData <- delay.gen.modified(input_df = sim.data.df)
+
+X <- LatentData$X
+Y <- LatentData$Y
 
 

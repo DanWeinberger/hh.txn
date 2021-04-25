@@ -4,6 +4,7 @@ library(matrixStats)
 library(reshape2)
 library(data.table)
 library(stats4)
+library(parallel)
 
 source('./R/simulate_data.R')
 source('./R/delay_dist_sim.R')
@@ -14,7 +15,7 @@ source('./R/data_manipulation.R')
 
 
 #Generate the synthetic data and store as a data frame
-N.HH <- 5000
+N.HH <- 500#0
 sim.data.ls <- pblapply(1:N.HH, gen.hh,CPI=(1-0.9995), #Increase CPI to have more cases, 
                         prob.trans.day=(1-0.968),
                         irr.vax1=0.2,irr.vax2=1)
@@ -49,6 +50,25 @@ X<-do.call('rbind.data.frame',X)
 Y<-do.call('rbind.data.frame',Y)
 proc.time() - ptm
 
+
+#Create cluster for parallel processing and run the permutation test
+nCores <- detectCores() - 1
+cl1 <-makeCluster(nCores)
+# Run JAGS in parallel
+clusterEvalQ(cl1, {
+  library(lme4)
+  library(data.table)
+ # library(HDInterval, quietly = TRUE)
+})
+clusterExport(cl1, c('sim.data.ls','delay.gen.singleHH','delay_dist_sim'), environment())
+LatentDataFast <- pblapply(sim.data.ls,delay.gen.singleHH,cl=cl1)
+
+X <- lapply(LatentDataFast, function(x) x<- x$X)
+Y <- lapply(LatentDataFast, function(x) x<- x$Y)
+X<-do.call('rbind.data.frame',X)
+Y<-do.call('rbind.data.frame',Y)
+
+stopCluster(cl1)
 
 #### Explicit for loop through HHs
 ptm <- proc.time()

@@ -118,6 +118,9 @@ delay.gen.simplified <- function(input_df){
   
   X.df$Y <- Y
   
+  
+  #X.df <- sparsify(X.df) 
+  
   out.list=list( 'X.df'=X.df)  
   return(out.list)
 }
